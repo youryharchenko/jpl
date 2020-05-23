@@ -24,6 +24,8 @@ var coreFuncs = map[string]Func{
 	"print": printExprs,
 	"quote": quote,
 	"eval":  eval,
+	"set":   set,
+	"let":   let,
 }
 
 func printExprs(args []Expr) Expr {
@@ -45,4 +47,34 @@ func eval(args []Expr) Expr {
 		return &ID{Value: "null", Name: "ID"}
 	}
 	return args[0].Eval().Eval()
+}
+
+func set(args []Expr) Expr {
+	if len(args) != 2 {
+		return &ID{Value: "error", Name: "ID"}
+	}
+	return current.set(args[0].Eval().String(), args[1].Eval())
+}
+
+func let(args []Expr) Expr {
+	errID := &ID{Value: "error", Name: "ID"}
+	if len(args) < 1 {
+		return errID
+	}
+	d, ok := args[0].Eval().(*Dict)
+	if !ok {
+		return errID
+	}
+	var res Expr
+	current.push(d.Value)
+	for _, item := range args[1:] {
+		res = item.Eval()
+		id, ok := res.(*ID)
+		if ok && id.Value == "break" {
+			break
+		}
+	}
+	res = current.dict()
+	current.pop()
+	return res
 }

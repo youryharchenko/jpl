@@ -29,15 +29,27 @@ func atomNode(ns []parsec.ParsecNode) parsec.ParsecNode {
 		}
 		return n
 	case []parsec.ParsecNode:
+		//debug("atomNode", n[0], n[1])
 		return n
 	case map[string]interface{}:
 		return n
 	case string:
 		return &Text{Node: n, Value: n, Name: "Text"}
+	case *Refer:
+		return n
 	default:
 		debug("atomNode: unknown type", reflect.TypeOf(n).String())
 	}
 	return nil
+}
+
+func referNode(ns []parsec.ParsecNode) parsec.ParsecNode {
+	if ns == nil || len(ns) < 1 {
+		return nil
+	}
+	//debug("referNode", ns)
+	id := nodeToExpr(ns[1]).String()
+	return &Refer{Node: ns[1], Value: id, Name: "Refer"}
 }
 
 func alistNode(ns []parsec.ParsecNode) parsec.ParsecNode {
@@ -107,6 +119,8 @@ func nodeToExpr(node parsec.ParsecNode) (res Expr) {
 		res = node.(*Float)
 	case *ID:
 		res = node.(*ID)
+	case *Refer:
+		res = node.(*Refer)
 	case *Alist:
 		res = node.(*Alist)
 	case *Llist:
@@ -161,6 +175,9 @@ func debugNodes(nodes []parsec.ParsecNode, deep int) {
 			debug(strings.Repeat(".", deep*2), v.Debug())
 		case *ID:
 			v := node.(*ID)
+			debug(strings.Repeat(".", deep*2), v.Debug())
+		case *Refer:
+			v := node.(*Refer)
 			debug(strings.Repeat(".", deep*2), v.Debug())
 		case *Alist:
 			v := node.(*Alist)

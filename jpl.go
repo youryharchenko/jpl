@@ -15,8 +15,10 @@ var Y parsec.Parser
 // circular rats
 var value parsec.Parser
 
+var point = parsec.Atom(".", "POINT")
+var refer = parsec.And(referNode, point, parsec.Ident())
 var oper = parsec.OrdChoice(nil, parsec.Atom("+", "OP"), parsec.Atom("-", "OP"), parsec.Atom("*", "OP"), parsec.Atom("/", "OP"), parsec.Atom("%", "OP"))
-var atom = parsec.OrdChoice(atomNode, parsec.Ident(), parsec.Float(), parsec.Int(), parsec.String(), oper)
+var atom = parsec.OrdChoice(atomNode, parsec.Ident(), parsec.Float(), parsec.Int(), parsec.String(), oper, refer)
 
 var openSqrt = parsec.Atom("[", "OPENSQRT")
 var closeSqrt = parsec.Atom("]", "CLOSESQRT")

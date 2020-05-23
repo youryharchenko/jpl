@@ -82,6 +82,28 @@ func (id *ID) Eval() (res Expr) {
 	return id
 }
 
+// Refer -
+type Refer struct {
+	Expr
+	Node  parsec.ParsecNode
+	Name  string
+	Value string
+}
+
+func (ref *Refer) String() (res string) {
+	return fmt.Sprintf(".%s", ref.Value)
+}
+
+// Debug -
+func (ref *Refer) Debug() (res string) {
+	return fmt.Sprintf("%s:.%s", ref.Name, ref.Value)
+}
+
+// Eval -
+func (ref *Refer) Eval() (res Expr) {
+	return current.get(ref.Value)
+}
+
 // Alist -
 type Alist struct {
 	Expr

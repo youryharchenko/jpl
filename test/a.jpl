@@ -23,3 +23,19 @@
 (pow 2 10)
 (pow 2 0.5)
 (pow 1.5 2)
+
+.a
+(set a 0)
+.a
+(set b (+ 5 5))
+.b
+(set b (* 5 5))
+.b
+(set c b)
+(set .c 0)
+.b
+(set f +)
+(.f 2 2)
+.a
+(let {a: 5 b: 6} (set a (+ .a .b)))
+.a
