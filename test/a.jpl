@@ -36,6 +36,58 @@
 .b
 (set f +)
 (.f 2 2)
+
 .a
 (let {a: 5 b: 6} (set a (+ .a .b)))
 .a
+
+(do)
+(do (print .a) break)
+(do break (print .a))
+(do (print .a))
+
+((func [x y] (+ .x .y)) 1 1)
+((func [x y] (+ .x .y)) 1 1 1)
+(set inc (func [i] (+ .i 1)))
+(set dec (func [i] (- .i 1)))
+(.inc 3)
+(.dec 3)
+.inc
+.dec
+
+(eq 1 1)
+(eq 1 1.0)
+(eq 1.0 1)
+(eq 1.0 1.0)
+(eq 1 1.1)
+(eq 1.0 1.0001)
+(eq 1 2)
+(eq (+ 2 2) 5)
+(eq (+ 2 2) 4)
+(eq [1 2 3] [1 (+ 1 1) (- 5 2)])
+(eq (quote (+ 2 2)) (quote (+ 2 2)))
+(eq (quote (+ 2 2)) (quote (+ 2 3)))
+(eq .inc .inc)
+(eq .inc .dec)
+(set a 1) (set b 1)
+(eq .a .b)
+(eq (quote .a) (quote .b))
+(eq (quote .a) (quote .a))
+(eq {a:1 b:null} {a:1 b:null})
+(eq {a:1 b:null} {a:1 b:false})
+(eq {a:1} {a:1 b:null})
+(eq {a:1 b:null} {a:1} )
+
+(gt 2 1)
+(gt 1 2)
+(gt 2.0 1.0)
+(gt 1.0 2.0)
+(gt 2.0 1)
+(gt 1.0 2)
+(lt 1.0 2)
+(le 1.0 2)
+(le 1.0 1)
+(le 2.0 1)
+(ge 1.0 2)
+(ge 1.0 1)
+(ge 2.0 1)

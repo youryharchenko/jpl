@@ -29,7 +29,7 @@ func (ctx *Context) set(id string, val Expr) Expr {
 			c.vars[id] = val
 			//debug("set", val)
 			if old == nil {
-				old = &ID{Value: "null", Name: "ID"}
+				old = nullID
 			}
 			return old
 		}
@@ -37,7 +37,7 @@ func (ctx *Context) set(id string, val Expr) Expr {
 	}
 	old, ok := c.vars[id]
 	if !ok {
-		old = &ID{Value: "undefined", Name: "ID"}
+		old = undefID
 	}
 	c.vars[id] = val
 	return old
@@ -56,7 +56,7 @@ func (ctx *Context) get(id string) Expr {
 	if ok {
 		return val
 	}
-	return &ID{Value: "undefined", Name: "ID"}
+	return undefID
 }
 
 func (ctx *Context) bound(id string) bool {
@@ -73,6 +73,14 @@ func (ctx *Context) bound(id string) bool {
 
 func (ctx *Context) dict() Expr {
 	return &Dict{Value: ctx.vars, Name: "Dict"}
+}
+
+func (ctx *Context) clone() *Context {
+	vars := map[string]Expr{}
+	for key, item := range ctx.vars {
+		vars[key] = item.Clone()
+	}
+	return &Context{parent: ctx.parent, vars: vars}
 }
 
 // EvalNodes -

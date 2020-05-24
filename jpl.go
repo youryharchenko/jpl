@@ -28,6 +28,10 @@ var openPar = parsec.Atom("(", "OPENPAR")
 var closePar = parsec.Atom(")", "CLOSEPAR")
 var llist = parsec.And(llistNode, openPar, values, closePar)
 
+var openAng = parsec.Atom("<", "OPENANG")
+var closeAng = parsec.Atom(">", "CLOSEANG")
+var mlist = parsec.And(mlistNode, openAng, values, closeAng)
+
 var colon = parsec.Atom(":", "COLON")
 var property = parsec.And(propNode, parsec.Ident(), colon, &value)
 var properties = parsec.Kleene(nil, property)
@@ -36,6 +40,8 @@ var openBra = parsec.Atom("{", "OPENBRA")
 var closeBra = parsec.Atom("}", "CLOSEBRA")
 var dict = parsec.And(dictNode, openBra, properties, closeBra)
 
+var comment = parsec.And(commentNode, parsec.Atom("#", "HASH"), parsec.TokenExact("[^\n]*", "ALFA"), parsec.TokenExact("\n", "LF"))
+
 var values = parsec.Kleene(nil, &value)
 
 var funcs map[string]Func
@@ -43,7 +49,7 @@ var funcs map[string]Func
 func init() {
 	funcs = initFuncs()
 
-	value = parsec.OrdChoice(nil, atom, alist, llist, dict)
+	value = parsec.OrdChoice(nil, atom, alist, llist, mlist, dict, comment)
 	Y = parsec.OrdChoice(nil, values)
 }
 

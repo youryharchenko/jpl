@@ -4,6 +4,25 @@ import (
 	"log"
 )
 
+// Constants -
+const (
+	TRUE      = "true"
+	FALSE     = "false"
+	ERROR     = "error"
+	NULL      = "null"
+	UNDEFINED = "undefined"
+	BREAK     = "break"
+	CONTINUE  = "contunue"
+)
+
+var (
+	trueID  = &ID{Value: TRUE, Name: "ID"}
+	falseID = &ID{Value: FALSE, Name: "ID"}
+	errID   = &ID{Value: ERROR, Name: "ID"}
+	nullID  = &ID{Value: NULL, Name: "ID"}
+	undefID = &ID{Value: UNDEFINED, Name: "ID"}
+)
+
 func initFuncs() map[string]Func {
 	return mergeFuncs(funcs, coreFuncs, mathFuncs)
 }
@@ -20,12 +39,34 @@ func mergeFuncs(fns map[string]Func, ext ...map[string]Func) map[string]Func {
 	return fns
 }
 
+func applyFunc(fn Expr, args []Expr) Expr {
+	switch fnExpr := fn.Eval().(type) {
+	case *ID:
+		name := fnExpr.Value
+		f, ok := funcs[name]
+		if !ok {
+			return undefID
+		}
+		return f(args)
+	case *Lamb:
+		return fnExpr.Apply(args)
+	}
+	return undefID
+}
+
 var coreFuncs = map[string]Func{
 	"print": printExprs,
 	"quote": quote,
 	"eval":  eval,
 	"set":   set,
 	"let":   let,
+	"do":    do,
+	"while": while,
+	"eq":    eq,
+	"is":    is,
+	"not":   not,
+	"if":    iff,
+	"func":  lambda,
 }
 
 func printExprs(args []Expr) Expr {
@@ -37,27 +78,73 @@ func printExprs(args []Expr) Expr {
 
 func quote(args []Expr) Expr {
 	if len(args) == 0 {
-		return &ID{Value: "null", Name: "ID"}
+		return nullID
 	}
 	return args[0]
 }
 
 func eval(args []Expr) Expr {
 	if len(args) == 0 {
-		return &ID{Value: "null", Name: "ID"}
+		return nullID
 	}
 	return args[0].Eval().Eval()
 }
 
 func set(args []Expr) Expr {
 	if len(args) != 2 {
-		return &ID{Value: "error", Name: "ID"}
+		return errID
 	}
 	return current.set(args[0].Eval().String(), args[1].Eval())
 }
 
+func eq(args []Expr) Expr {
+	if len(args) != 2 {
+		return errID
+	}
+	if args[0].Eval().Equals(args[1].Eval()) {
+		return trueID
+	}
+	return falseID
+}
+
+func is(args []Expr) Expr {
+	if len(args) != 2 {
+		return errID
+	}
+	return match(args[0], args[1].Eval())
+}
+
+func not(args []Expr) Expr {
+	if len(args) != 1 {
+		return errID
+	}
+	e := args[0].Eval()
+	if e.Equals(trueID) {
+		return falseID
+	} else if e.Equals(falseID) {
+		return trueID
+	}
+	return errID
+}
+
+func iff(args []Expr) Expr {
+	if len(args) < 2 || len(args) > 3 {
+		return errID
+	}
+	cond, ok := args[0].Eval().(*ID)
+	if !ok {
+		return errID
+	}
+	if cond.Value == TRUE {
+		return args[1].Eval()
+	}
+	if cond.Value == FALSE && len(args) == 3 {
+		return args[2].Eval()
+	}
+	return errID
+}
+
 func let(args []Expr) Expr {
-	errID := &ID{Value: "error", Name: "ID"}
 	if len(args) < 1 {
 		return errID
 	}
@@ -67,14 +154,61 @@ func let(args []Expr) Expr {
 	}
 	var res Expr
 	current.push(d.Value)
-	for _, item := range args[1:] {
-		res = item.Eval()
-		id, ok := res.(*ID)
-		if ok && id.Value == "break" {
-			break
-		}
-	}
+	do(args[1:])
 	res = current.dict()
 	current.pop()
 	return res
+}
+
+func while(args []Expr) (res Expr) {
+	if len(args) < 2 {
+		return errID
+	}
+	res = nullID
+	for args[0].Eval().Equals(trueID) {
+		res = do(args[1:])
+		id, ok := res.(*ID)
+		if ok && id.Value == BREAK {
+			break
+		}
+		if ok && id.Value == CONTINUE {
+			continue
+		}
+	}
+	return res
+}
+
+func do(args []Expr) Expr {
+	var res Expr = nullID
+	for _, item := range args {
+		res = item.Eval()
+		id, ok := res.(*ID)
+		if ok && id.Value == BREAK {
+			break
+		}
+		if ok && id.Value == CONTINUE {
+			break
+		}
+	}
+	return res
+}
+
+func lambda(args []Expr) Expr {
+	if len(args) != 2 {
+		return errID
+	}
+	alist, ok := args[0].(*Alist)
+	if !ok {
+		return errID
+	}
+	params := []*ID{}
+	for _, item := range alist.Value {
+		param, ok := item.Eval().(*ID)
+		if !ok {
+			return errID
+		}
+		params = append(params, param)
+	}
+	body := args[1]
+	return &Lamb{Params: params, Body: body, Name: "Lambda"}
 }

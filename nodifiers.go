@@ -68,6 +68,22 @@ func alistNode(ns []parsec.ParsecNode) parsec.ParsecNode {
 	return &Alist{Node: ns[1], Value: list, Name: "Alist"}
 }
 
+func mlistNode(ns []parsec.ParsecNode) parsec.ParsecNode {
+	if ns == nil || len(ns) < 1 {
+		return nil
+	}
+	//debug("mlistNode", ns)
+	ilist, ok := ns[1].([]parsec.ParsecNode)
+	if !ok {
+		return nil
+	}
+	list := []Expr{}
+	for _, item := range ilist {
+		list = append(list, nodeToExpr(item))
+	}
+	return &Mlist{Node: ns[1], Value: list, Name: "Mlist"}
+}
+
 func llistNode(ns []parsec.ParsecNode) parsec.ParsecNode {
 	if ns == nil || len(ns) < 1 {
 		return nil
@@ -111,6 +127,15 @@ func dictNode(ns []parsec.ParsecNode) parsec.ParsecNode {
 	return &Dict{Node: ns[1], Value: m, Name: "Dict"}
 }
 
+func commentNode(ns []parsec.ParsecNode) parsec.ParsecNode {
+	if ns == nil || len(ns) < 1 {
+		return nil
+	}
+	comment := ns[1].(*parsec.Terminal)
+	//debug("commentNode", comment.Value)
+	return &Comment{Node: ns[1], Value: comment.Value, Name: "Comment"}
+}
+
 func nodeToExpr(node parsec.ParsecNode) (res Expr) {
 	switch node.(type) {
 	case *Int:
@@ -123,6 +148,8 @@ func nodeToExpr(node parsec.ParsecNode) (res Expr) {
 		res = node.(*Refer)
 	case *Alist:
 		res = node.(*Alist)
+	case *Mlist:
+		res = node.(*Mlist)
 	case *Llist:
 		res = node.(*Llist)
 	case *Prop:
@@ -131,6 +158,8 @@ func nodeToExpr(node parsec.ParsecNode) (res Expr) {
 		res = node.(*Dict)
 	case *Text:
 		res = node.(*Text)
+	case *Comment:
+		res = node.(*Comment)
 	case []parsec.ParsecNode:
 		//debug("nodeToExpr: []parsec.ParsecNode:", node)
 		nodes := node.([]parsec.ParsecNode)
@@ -181,6 +210,9 @@ func debugNodes(nodes []parsec.ParsecNode, deep int) {
 			debug(strings.Repeat(".", deep*2), v.Debug())
 		case *Alist:
 			v := node.(*Alist)
+			debug(strings.Repeat(".", deep*2), v.Debug())
+		case *Mlist:
+			v := node.(*Mlist)
 			debug(strings.Repeat(".", deep*2), v.Debug())
 		case *Llist:
 			v := node.(*Llist)

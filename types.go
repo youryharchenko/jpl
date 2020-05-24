@@ -13,6 +13,8 @@ type Func func([]Expr) Expr
 type Expr interface {
 	fmt.Stringer
 	Eval() Expr
+	Equals(Expr) bool
+	Clone() Expr
 	Debug() string
 }
 
@@ -38,6 +40,22 @@ func (num *Int) Eval() (res Expr) {
 	return num
 }
 
+// Equals -
+func (num *Int) Equals(e Expr) (res bool) {
+	v, ok := e.(*Int)
+	if !ok {
+		v, ok := e.(*Float)
+		return ok && num.Value == int(v.Value)
+	}
+	res = ok && num.Value == v.Value
+	return
+}
+
+// Clone -
+func (num *Int) Clone() (res Expr) {
+	return &Int{Value: num.Value, Name: num.Name, Node: num.Node}
+}
+
 // Float -
 type Float struct {
 	Expr
@@ -47,7 +65,7 @@ type Float struct {
 }
 
 func (num *Float) String() (res string) {
-	return fmt.Sprintf("%f", num.Value)
+	return fmt.Sprintf("%.4f", num.Value)
 }
 
 // Debug -
@@ -58,6 +76,22 @@ func (num *Float) Debug() (res string) {
 // Eval -
 func (num *Float) Eval() (res Expr) {
 	return num
+}
+
+// Equals -
+func (num *Float) Equals(e Expr) (res bool) {
+	v, ok := e.(*Float)
+	if !ok {
+		v, ok := e.(*Int)
+		return ok && num.Value == float64(v.Value)
+	}
+	res = ok && num.Value == v.Value
+	return
+}
+
+// Clone -
+func (num *Float) Clone() (res Expr) {
+	return &Float{Value: num.Value, Name: num.Name, Node: num.Node}
 }
 
 // ID -
@@ -82,6 +116,18 @@ func (id *ID) Eval() (res Expr) {
 	return id
 }
 
+// Equals -
+func (id *ID) Equals(e Expr) (res bool) {
+	v, ok := e.(*ID)
+	res = ok && id.Value == v.Value
+	return
+}
+
+// Clone -
+func (id *ID) Clone() (res Expr) {
+	return &ID{Value: id.Value, Name: id.Name, Node: id.Node}
+}
+
 // Refer -
 type Refer struct {
 	Expr
@@ -102,6 +148,18 @@ func (ref *Refer) Debug() (res string) {
 // Eval -
 func (ref *Refer) Eval() (res Expr) {
 	return current.get(ref.Value)
+}
+
+// Equals -
+func (ref *Refer) Equals(e Expr) (res bool) {
+	v, ok := e.(*Refer)
+	res = ok && ref.Value == v.Value
+	return
+}
+
+// Clone -
+func (ref *Refer) Clone() (res Expr) {
+	return &Refer{Value: ref.Value, Name: ref.Name, Node: ref.Node}
 }
 
 // Alist -
@@ -137,6 +195,26 @@ func (alist *Alist) Eval() (res Expr) {
 	return &Alist{Node: alist.Node, Name: alist.Name, Value: a}
 }
 
+// Equals -
+func (alist *Alist) Equals(e Expr) (res bool) {
+	v, ok := e.(*Alist)
+	if !ok {
+		return false
+	}
+	res = true
+	for i, item := range alist.Value {
+		if !item.Equals(v.Value[i]) {
+			return false
+		}
+	}
+	return
+}
+
+// Clone -
+func (alist *Alist) Clone() (res Expr) {
+	return &Alist{Value: alist.Value, Name: alist.Name, Node: alist.Node}
+}
+
 // Llist -
 type Llist struct {
 	Expr
@@ -164,14 +242,78 @@ func (llist *Llist) Debug() (res string) {
 // Eval -
 func (llist *Llist) Eval() (res Expr) {
 	if len(llist.Value) == 0 {
-		return &ID{Value: "null", Name: "ID"}
+		return nullID
 	}
-	name := llist.Value[0].Eval().(*ID).Value
-	fn, ok := funcs[name]
+	return applyFunc(llist.Value[0].Eval(), llist.Value[1:])
+}
+
+// Equals -
+func (llist *Llist) Equals(e Expr) (res bool) {
+	v, ok := e.(*Llist)
 	if !ok {
-		return &ID{Value: "undefined", Name: "ID"}
+		return false
 	}
-	return fn(llist.Value[1:])
+	res = true
+	for i, item := range llist.Value {
+		if !item.Equals(v.Value[i]) {
+			return false
+		}
+	}
+	return
+}
+
+// Clone -
+func (llist *Llist) Clone() (res Expr) {
+	return &Llist{Value: llist.Value, Name: llist.Name, Node: llist.Node}
+}
+
+// Mlist -
+type Mlist struct {
+	Expr
+	Node  parsec.ParsecNode
+	Name  string
+	Value []Expr
+}
+
+func (mlist *Mlist) String() (res string) {
+	res = "<"
+	sep := ""
+	for _, item := range mlist.Value {
+		res += fmt.Sprintf("%s%v", sep, item)
+		sep = " "
+	}
+	res += ">"
+	return
+}
+
+// Debug -
+func (mlist *Mlist) Debug() (res string) {
+	return fmt.Sprintf("%s:%s", mlist.Name, mlist.String())
+}
+
+// Eval -
+func (mlist *Mlist) Eval() (res Expr) {
+	return mlist
+}
+
+// Equals -
+func (mlist *Mlist) Equals(e Expr) (res bool) {
+	v, ok := e.(*Mlist)
+	if !ok {
+		return false
+	}
+	res = true
+	for i, item := range mlist.Value {
+		if !item.Equals(v.Value[i]) {
+			return false
+		}
+	}
+	return
+}
+
+// Clone -
+func (mlist *Mlist) Clone() (res Expr) {
+	return &Llist{Value: mlist.Value, Name: mlist.Name, Node: mlist.Node}
 }
 
 // Prop -
@@ -225,6 +367,27 @@ func (dict *Dict) Eval() (res Expr) {
 	return &Dict{Node: dict.Node, Name: dict.Name, Value: d}
 }
 
+// Equals -
+func (dict *Dict) Equals(e Expr) (res bool) {
+	v, ok := e.(*Dict)
+	if !ok {
+		return false
+	}
+	res = true
+	for key, item := range dict.Value {
+		p, ok := v.Value[key]
+		if !(ok && item.Equals(p)) {
+			return false
+		}
+	}
+	return
+}
+
+// Clone -
+func (dict *Dict) Clone() (res Expr) {
+	return &Dict{Value: dict.Value, Name: dict.Name, Node: dict.Node}
+}
+
 // Text -
 type Text struct {
 	Expr
@@ -245,4 +408,99 @@ func (text *Text) Debug() (res string) {
 // Eval -
 func (text *Text) Eval() (res Expr) {
 	return text
+}
+
+// Equals -
+func (text *Text) Equals(e Expr) (res bool) {
+	v, ok := e.(*Text)
+	res = ok && text.Value == v.Value
+	return
+}
+
+// Clone -
+func (text *Text) Clone() (res Expr) {
+	return &Text{Value: text.Value, Name: text.Name, Node: text.Node}
+}
+
+// Lamb -
+type Lamb struct {
+	Expr
+	Name   string
+	Params []*ID
+	Body   Expr
+}
+
+func (lamb *Lamb) String() (res string) {
+	return fmt.Sprintf("%v=>%v", lamb.Params, lamb.Body)
+}
+
+// Debug -
+func (lamb *Lamb) Debug() (res string) {
+	return fmt.Sprintf("%s:%s", lamb.Name, lamb.String())
+}
+
+// Eval -
+func (lamb *Lamb) Eval() (res Expr) {
+	return lamb
+}
+
+// Equals -
+func (lamb *Lamb) Equals(e Expr) (res bool) {
+	v, ok := e.(*Lamb)
+	res = ok && lamb == v
+	return
+}
+
+// Clone -
+func (lamb *Lamb) Clone() (res Expr) {
+	return &Lamb{Params: lamb.Params, Body: lamb.Body, Name: lamb.Name}
+}
+
+// Apply -
+func (lamb *Lamb) Apply(args []Expr) (res Expr) {
+	if len(lamb.Params) != len(args) {
+		return errID
+	}
+	vars := map[string]Expr{}
+	for i, item := range lamb.Params {
+		vars[item.Value] = args[i]
+	}
+	current.push(vars)
+	res = lamb.Body.Eval()
+	current.pop()
+	return
+}
+
+// Comment -
+type Comment struct {
+	Expr
+	Node  parsec.ParsecNode
+	Name  string
+	Value string
+}
+
+func (com *Comment) String() (res string) {
+	return fmt.Sprintf("%s", com.Value)
+}
+
+// Debug -
+func (com *Comment) Debug() (res string) {
+	return fmt.Sprintf("%s:%s", com.Name, com.Value)
+}
+
+// Eval -
+func (com *Comment) Eval() (res Expr) {
+	return com
+}
+
+// Equals -
+func (com *Comment) Equals(e Expr) (res bool) {
+	v, ok := e.(*Comment)
+	res = ok && com.Value == v.Value
+	return
+}
+
+// Clone -
+func (com *Comment) Clone() (res Expr) {
+	return &Comment{Value: com.Value, Name: com.Name, Node: com.Node}
 }
