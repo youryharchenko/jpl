@@ -2,6 +2,7 @@ package jpl
 
 import (
 	"log"
+	"reflect"
 )
 
 // Constants -
@@ -67,6 +68,8 @@ var coreFuncs = map[string]Func{
 	"not":   not,
 	"if":    iff,
 	"func":  lambda,
+	"form":  form,
+	"bool":  toBool,
 }
 
 func printExprs(args []Expr) Expr {
@@ -211,4 +214,69 @@ func lambda(args []Expr) Expr {
 	}
 	body := args[1]
 	return &Lamb{Params: params, Body: body, Name: "Lambda"}
+}
+
+func form(args []Expr) Expr {
+	if len(args) != 1 {
+		return errID
+	}
+	var res Expr
+	switch e := args[0].(type) {
+	case *Llist:
+		list := []Expr{}
+		for _, item := range e.Value {
+			list = append(list, item.Eval())
+		}
+		res = &Llist{Name: e.Name, Node: e.Node, Value: list}
+	case *Mlist:
+		list := []Expr{}
+		for _, item := range e.Value {
+			list = append(list, item.Eval())
+		}
+		res = &Mlist{Name: e.Name, Node: e.Node, Value: list}
+	default:
+		res = e.Eval()
+	}
+	return res
+}
+
+func toBool(args []Expr) Expr {
+	if len(args) != 1 {
+		return errID
+	}
+	res := trueID
+	switch e := args[0].Eval().(type) {
+	case *ID:
+		if e.Equals(falseID) || e.Equals(nullID) || e.Equals(undefID) {
+			res = falseID
+		}
+	case *Int:
+		if e.Value == 0 {
+			res = falseID
+		}
+	case *Float:
+		if e.Value == 0.0 {
+			res = falseID
+		}
+	case *Alist:
+		if len(e.Value) == 0 {
+			res = falseID
+		}
+	case *Mlist:
+		if len(e.Value) == 0 {
+			res = falseID
+		}
+	case *Dict:
+		if len(e.Value) == 0 {
+			res = falseID
+		}
+	case *Text:
+		//debug("toBool", "text", len(e.Value), e.Value)
+		if len(e.Value) == 0 {
+			res = falseID
+		}
+	default:
+		debug("toBool", reflect.TypeOf(e))
+	}
+	return res
 }

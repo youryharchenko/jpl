@@ -3,14 +3,23 @@ package jpl
 // Match -
 type Match func([]Expr, Expr) bool
 
-var matches = map[string]Match{
-	"atom":  patAtom,
-	"id":    patID,
-	"num":   patNum,
-	"int":   patInt,
-	"float": patFloat,
-	"text":  patText,
-	"refer": patRefer,
+var matches map[string]Match
+
+func init() {
+	matches = map[string]Match{
+		"atom":  patAtom,
+		"id":    patID,
+		"num":   patNum,
+		"int":   patInt,
+		"float": patFloat,
+		"text":  patText,
+		"ref":   patRefer,
+		"list":  patAlist,
+		"dict":  patDict,
+		"func":  patLamb,
+		"any":   patAny,
+		"non":   patNon,
+	}
 }
 
 func patAtom(args []Expr, e Expr) bool {
@@ -60,6 +69,55 @@ func patRefer(args []Expr, e Expr) bool {
 		return true
 	}
 	return false
+}
+
+func patAlist(args []Expr, e Expr) bool {
+	if _, ok := e.(*Alist); ok {
+		return true
+	}
+	return false
+}
+
+func patDict(args []Expr, e Expr) bool {
+	if _, ok := e.(*Dict); ok {
+		return true
+	}
+	return false
+}
+
+func patLamb(args []Expr, e Expr) bool {
+	if _, ok := e.(*Lamb); ok {
+		return true
+	}
+	return false
+}
+
+func patAny(args []Expr, e Expr) bool {
+	return true
+}
+
+func patNon(args []Expr, e Expr) bool {
+	pat, ok := args[0].(*Mlist)
+	if !ok {
+		//debug("patNon", "not Mlist")
+		return false
+	}
+	if len(pat.Value) == 0 {
+		//debug("patNon", "len == 0", len(pat.Value))
+		return false
+	}
+	name, ok := pat.Value[0].Eval().(*ID)
+	if !ok {
+		//debug("patNon", "not ID")
+		return false
+	}
+
+	f, ok := matches[name.Value]
+	if !ok {
+		//debug("patNon", "not found", name.Value)
+		return false
+	}
+	return !f(pat.Value[1:], e)
 }
 
 func match(pat Expr, e Expr) Expr {

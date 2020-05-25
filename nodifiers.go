@@ -34,7 +34,7 @@ func atomNode(ns []parsec.ParsecNode) parsec.ParsecNode {
 	case map[string]interface{}:
 		return n
 	case string:
-		return &Text{Node: n, Value: n, Name: "Text"}
+		return &Text{Node: n, Value: strings.ReplaceAll(n, `"`, ""), Name: "Text"}
 	case *Refer:
 		return n
 	default:

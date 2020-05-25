@@ -46,3 +46,21 @@
     (set r (is [.z .y .x][2 1 3]))
 )
 # comment
+(set u null) (set v null)
+{u: .u v: .v}
+(is {b:.u c:.v} {a:1 b:2 c:3})
+{u: .u v: .v}
+
+(is {b:.u c:.v} {a:1 b:2 c:3})
+(is {b:.u c:.v} {a:1 b:-2 c:3})
+
+[<> <atom><list 1>]
+[(is <atom> a) (is <atom> 1)(is <atom> .u)(is <atom> (quote .u)) (is <atom> []) (is <atom> {})]
+[(is <id> a) (is <id> 1)(is <id> .u)(is <id> (quote .u)) (is <id> []) (is <id> {})]
+[(is <num> a) (is <num> 1)(is <num> .u)(is <num> (quote .u)) (is <num> []) (is <num> {})]
+[(is <ref> a) (is <ref> 1)(is <ref> .u)(is <ref> (quote .u)) (is <ref> []) (is <ref> {})]
+[(is <list> a) (is <list> 1)(is <list> .u)(is <list> (quote .u)) (is <list> []) (is <list> {})]
+[(is <dict> a) (is <dict> 1)(is <dict> .u)(is <dict> (quote .u)) (is <dict> []) (is <dict> {})]
+(is <func> (func [i] (set i (+ .i 1))))
+[(is <any> a) (is <any> 1)(is <any> .u)(is <any> (quote .u)) (is <any> []) (is <any> {})]
+[(is <non <atom>> a) (is <non <atom>> 1)(is <non <atom>> .u)(is <non <atom>> (quote .u)) (is <non <atom>> []) (is <non <atom>> {})]

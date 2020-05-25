@@ -397,12 +397,12 @@ type Text struct {
 }
 
 func (text *Text) String() (res string) {
-	return fmt.Sprintf("%s", text.Value)
+	return fmt.Sprintf(`"%s"`, text.Value)
 }
 
 // Debug -
 func (text *Text) Debug() (res string) {
-	return fmt.Sprintf("%s:%s", text.Name, text.Value)
+	return fmt.Sprintf(`%s:"%s"`, text.Name, text.Value)
 }
 
 // Eval -

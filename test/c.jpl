@@ -1,3 +1,16 @@
-a
-# comment
-(+ 1 1)
+#! comment
+(set plus +)
+(set pat atom)
+(set a 1)
+(set b 2)
+(set c 2)
+[(form a) (form .a) (form 0) (form [.b .c]) (form {a:.b b:.c}) (form (.plus .b .c)) (eval (form (.plus .b .c))) (form <.pat>)]
+
+{a:""  b:"Hello, world!" c:"Привіт, світ!"}
+[(is "abc" "abc") (is <text> "abc") (is <text> abc)]
+{a:""  b:"Hello,\n world!" c:"Привіт,\n \"світ!\""}
+
+[(bool 1) (bool 0) (bool []) (bool {}) (bool [.a]) (bool {a:.a})] 
+[(bool <>) (bool <atom>) (bool null) (bool .qwe) (bool .pat)]
+[(bool true) (bool false)]
+(bool "") (bool "a")
