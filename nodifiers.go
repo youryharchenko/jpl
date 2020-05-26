@@ -19,6 +19,15 @@ func atomNode(ns []parsec.ParsecNode) parsec.ParsecNode {
 		case "INT":
 			i, _ := strconv.Atoi(n.Value)
 			return &Int{Node: n, Value: i, Name: "Num"}
+		case "OCT":
+			i, _ := strconv.ParseInt(n.Value, 0, 0)
+			return &Int{Node: n, Value: int(i), Name: "Num"}
+		case "HEX":
+			i, err := strconv.ParseInt(n.Value, 0, 0)
+			if err != nil {
+				debug("atomNode", "HEX", err)
+			}
+			return &Int{Node: n, Value: int(i), Name: "Num"}
 		case "FLOAT":
 			f, _ := strconv.ParseFloat(n.Value, 64)
 			return &Float{Node: n, Value: f, Name: "Num"}

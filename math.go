@@ -6,16 +6,17 @@ import (
 )
 
 var mathFuncs = map[string]Func{
-	"+":   sum,
-	"-":   sub,
-	"*":   prod,
-	"/":   div,
-	"%":   mod,
-	"pow": pow,
-	"gt":  gt,
-	"lt":  lt,
-	"ge":  ge,
-	"le":  le,
+	"+":     sum,
+	"-":     sub,
+	"*":     prod,
+	"/":     div,
+	"%":     mod,
+	"pow":   pow,
+	"gt":    gt,
+	"lt":    lt,
+	"ge":    ge,
+	"le":    le,
+	"range": rangeInt,
 }
 
 func sum(args []Expr) Expr {
@@ -111,13 +112,13 @@ func div(args []Expr) Expr {
 			if i == 0 {
 				sf = float64(a.(*Int).Value)
 			} else {
-				sf -= float64(a.(*Int).Value)
+				sf /= float64(a.(*Int).Value)
 			}
 		case *Float:
 			if i == 0 {
 				sf = a.(*Float).Value
 			} else {
-				sf -= a.(*Float).Value
+				sf /= a.(*Float).Value
 			}
 		}
 	}
@@ -321,4 +322,32 @@ func le(args []Expr) Expr {
 		return falseID
 	}
 	return errID
+}
+
+func rangeInt(args []Expr) Expr {
+	if len(args) != 2 {
+		return errID
+	}
+	i1, ok1 := args[0].(*Int)
+	i2, ok2 := args[1].(*Int)
+	if !(ok1 && ok2) {
+		return errID
+	}
+	list := []Expr{}
+	if i2.Value >= i1.Value {
+		list = make([]Expr, i2.Value-i1.Value)
+		for i := i1.Value; i < i2.Value; i++ {
+			//list = append(list, &Int{Name: "Num", Node: nil, Value: i})
+			list[i-i1.Value] = &Int{Name: "Num", Node: nil, Value: i}
+		}
+	} else {
+		list = make([]Expr, i1.Value-i2.Value)
+		cnt := 0
+		for i := i1.Value; i > i2.Value; i-- {
+			//list = append(list, &Int{Name: "Num", Node: nil, Value: i})
+			list[cnt] = &Int{Name: "Num", Node: nil, Value: i}
+			cnt++
+		}
+	}
+	return &Alist{Name: "Alist", Node: nil, Value: list}
 }

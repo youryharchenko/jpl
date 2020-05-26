@@ -14,3 +14,24 @@
 [(bool <>) (bool <atom>) (bool null) (bool .qwe) (bool .pat)]
 [(bool true) (bool false)]
 (bool "") (bool "a")
+
+(map [1 2 3] quote)
+(map [1 2 3] (func [i] (+ .i 1)))
+(set sqr (func[i] (* .i .i)))
+(map [1 2 3] .sqr)
+
+(let {a:1 b:2 c:3 f:(func[i] (* .i .i)) r:null}
+    (set r (map [.a .b .c] .f))
+)
+
+(fold [1 2 3] 0 +)
+(range 0 10)
+(range 9 -1)
+
+(+ 0 (/ (pow -1 0) (+ 1 (* 2 0))))
+(pow -1 0)
+(+ 1 (* 2 0))
+
+{pi: (* 4 (fold (range 0 10000) 0 (func [p i] (+ .p (/ (pow -1 .i) (+ 1 (* 2 .i)))))))}
+
+(map (range 0 11) (func [i] (pow 2 .i)))

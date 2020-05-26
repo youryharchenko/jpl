@@ -1,6 +1,7 @@
 package jpl
 
 import (
+	"strconv"
 	"testing"
 
 	parsec "github.com/prataprc/goparsec"
@@ -33,5 +34,25 @@ func Test4(t *testing.T) {
 	v, _ := Y(s)
 	nodes := v.([]parsec.ParsecNode)
 	EvalNodes(nodes)
+	t.Error("")
+}
+
+func Test5(t *testing.T) {
+	i, err := strconv.ParseInt("0xA", 0, 0)
+	if err != nil {
+		t.Error(err, err.(*strconv.NumError), err.(*strconv.NumError).Num, err.(*strconv.NumError).Err)
+	} else {
+		t.Error(i)
+	}
+	t.Error("")
+}
+
+func Test6(t *testing.T) {
+	i, err := strconv.ParseUint("0xA", 0, 0)
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Error(i)
+	}
 	t.Error("")
 }

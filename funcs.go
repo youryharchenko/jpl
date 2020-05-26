@@ -25,7 +25,7 @@ var (
 )
 
 func initFuncs() map[string]Func {
-	return mergeFuncs(funcs, coreFuncs, mathFuncs)
+	return mergeFuncs(funcs, coreFuncs, osFuncs, mathFuncs)
 }
 
 func mergeFuncs(fns map[string]Func, ext ...map[string]Func) map[string]Func {
@@ -60,6 +60,8 @@ var coreFuncs = map[string]Func{
 	"quote": quote,
 	"eval":  eval,
 	"set":   set,
+	"get":   get,
+	"put":   put,
 	"let":   let,
 	"do":    do,
 	"while": while,
@@ -70,6 +72,10 @@ var coreFuncs = map[string]Func{
 	"func":  lambda,
 	"form":  form,
 	"bool":  toBool,
+	"map":   mapl,
+	"fold":  foldl,
+	//"foldl": foldl,
+	//"foldr": foldr,
 }
 
 func printExprs(args []Expr) Expr {
@@ -98,6 +104,46 @@ func set(args []Expr) Expr {
 		return errID
 	}
 	return current.set(args[0].Eval().String(), args[1].Eval())
+}
+
+func get(args []Expr) Expr {
+	if len(args) != 2 {
+		return errID
+	}
+	dict, ok := args[0].Eval().(*Dict)
+	if !ok {
+		return errID
+	}
+	key, ok := args[1].Eval().(*ID)
+	if !ok {
+		return errID
+	}
+	val, ok := dict.Value[key.Value]
+	if !ok {
+		return nullID
+	}
+	return val
+}
+
+func put(args []Expr) Expr {
+	if len(args) != 3 {
+		return errID
+	}
+	dict, ok := args[0].Eval().(*Dict)
+	if !ok {
+		return errID
+	}
+	key, ok := args[1].Eval().(*ID)
+	if !ok {
+		return errID
+	}
+	var res Expr = nullID
+	res, ok = dict.Value[key.Value]
+	if !ok {
+		res = nullID
+	}
+	dict.Value[key.Name] = args[3].Eval()
+	return res
 }
 
 func eq(args []Expr) Expr {
@@ -277,6 +323,37 @@ func toBool(args []Expr) Expr {
 		}
 	default:
 		debug("toBool", reflect.TypeOf(e))
+	}
+	return res
+}
+
+func mapl(args []Expr) Expr {
+	if len(args) != 2 {
+		return errID
+	}
+	alist, ok := args[0].Eval().(*Alist)
+	if !ok {
+		return errID
+	}
+	list := make([]Expr, len(alist.Value))
+	for i, item := range alist.Eval().(*Alist).Value {
+		//list = append(list, applyFunc(args[1].Eval(), []Expr{item}))
+		list[i] = applyFunc(args[1].Eval(), []Expr{item})
+	}
+	return &Alist{Node: alistNode, Name: alist.Name, Value: list}
+}
+
+func foldl(args []Expr) Expr {
+	if len(args) != 3 {
+		return errID
+	}
+	alist, ok := args[0].Eval().(*Alist)
+	if !ok {
+		return errID
+	}
+	var res Expr = args[1].Eval()
+	for _, item := range alist.Eval().(*Alist).Value {
+		res = applyFunc(args[2].Eval(), []Expr{res, item})
 	}
 	return res
 }

@@ -1,0 +1,24 @@
+#!/usr/bin/jpl
+#(env)
+{host:(host)}
+{user:(env "USER") lang:(env "LANG") path:(env "PATH") pwd:(env "PWD")}
+{args:(args) pid:(pid)}
+
+(pwd)
+(set oldwd (cd "..")) .oldwd
+(pwd)
+(cd .oldwd)
+(pwd)
+
+010
+0xA
+
+(env "HELLO")
+(setenv "HELLO" "World!")
+(env "HELLO")
+(unsetenv "HELLO")
+(env "HELLO")
+
+(fold (map (get (cmd "ls" "-al") out) print) 0 +)
+(fold (map (get (cmd "ps" "--no-headers") out) print) 0 +)
+(fold (map (env) print) 0 +)
