@@ -1,6 +1,7 @@
 package jpl
 
 import (
+	"bytes"
 	"log"
 
 	parsec "github.com/prataprc/goparsec"
@@ -61,7 +62,28 @@ func debug(args ...interface{}) {
 
 // Parse -
 func Parse(src []byte) []parsec.ParsecNode {
-	s := parsec.NewScanner(src)
+	s := parsec.NewScanner(skipComments(src))
 	v, _ := Y(s)
 	return v.([]parsec.ParsecNode)
+}
+
+func skipComments(src []byte) []byte {
+	buf := bytes.Buffer{}
+	skip := false
+	for _, i := range src {
+		if skip {
+			if i == 0xA {
+				skip = false
+			}
+			continue
+		} else {
+			if i == '#' {
+				skip = true
+				continue
+			}
+		}
+		buf.WriteByte(i)
+
+	}
+	return buf.Bytes()
 }
