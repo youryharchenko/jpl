@@ -1,6 +1,7 @@
 package jpl
 
 import (
+	"flag"
 	"os"
 	"os/exec"
 	"strings"
@@ -11,7 +12,7 @@ var osFuncs = map[string]Func{
 	"env":      env,
 	"setenv":   setenv,
 	"unsetenv": unsetenv,
-	"args":     execArgs,
+	"args":     flagArgs,
 	"pid":      execPid,
 	"pwd":      pwd,
 	"cd":       chdir,
@@ -39,7 +40,7 @@ func env(args []Expr) Expr {
 		list := make([]Expr, len(envs))
 		for i, item := range envs {
 			var key, val string
-			debug("env", item)
+			//debug("env", item)
 			e := strings.Split(item, "=")
 			switch len(e) {
 			case 0:
@@ -65,12 +66,24 @@ func env(args []Expr) Expr {
 	return &Text{Name: "Text", Value: os.Getenv(name.Value)}
 }
 
+func flagArgs(args []Expr) Expr {
+	if len(args) > 0 {
+		return errID
+	}
+	a := flag.Args()
+	list := make([]Expr, len(a)-1)
+	for i, arg := range a[1:] {
+		list[i] = parse([]Expr{&Text{Name: "Text", Value: arg}})
+	}
+	return &Alist{Name: "Alist", Value: list}
+}
+
 func execArgs(args []Expr) Expr {
 	if len(args) > 0 {
 		return errID
 	}
-	list := make([]Expr, len(os.Args))
-	for i, arg := range os.Args {
+	list := make([]Expr, len(os.Args)-2)
+	for i, arg := range os.Args[2:] {
 		list[i] = &Text{Name: "Text", Value: arg}
 	}
 	return &Alist{Name: "Alist", Value: list}

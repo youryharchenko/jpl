@@ -22,3 +22,45 @@
 (fold (map (get (cmd "ls" "-al") out) print) 0 +)
 (fold (map (get (cmd "ps" "--no-headers") out) print) 0 +)
 (fold (map (env) print) 0 +)
+
+(let {d: {a:null b:0 c:a}}
+    (put .d a true)
+    (put .d b (+ (get .d b) 1))
+    (put .d c b)
+)
+
+[(text a) (text 0) (text [1 2 3]) (text {a:null b:0 c:a}) (text .oldwd)] 
+
+(concat "Hello" "," " " (text world) "!")
+(join [1] [2 3] (range 4 10) [10])
+(merge {a:0} {b:1} (let {c:null} (set c (+ 1 1))) {})
+(merge {a:0 b:0 c:0} {b:1} (let {c:null} (set c (+ 1 1))))
+
+(and
+    (do (print 1) true)
+    (do (print 2) true)
+    (do (print 3) false)
+    (do (print 4) true)
+)
+
+(or
+    (do (print 1) false)
+    (do (print 2) false)
+    (do (print 3) true)
+    (do (print 4) true)
+)
+
+(for {i:null j:null n:10} (set i 0) (lt .i .n)  (set i (+ .i 1))
+    (set j (* .i .i))
+    (print .j)
+)
+
+(for {i:null j:null n:10} (set i 0) (lt .i .n) (set i (+ .i 1))
+    (set j (* .i .i))
+    (print .j)
+    (if (eq .j 49) break)
+)
+
+(parse "a b c" "1 2 3" "(+ 1  2)")
+(parse "a")
+(parse "1")

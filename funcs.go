@@ -3,6 +3,9 @@ package jpl
 import (
 	"log"
 	"reflect"
+	"strings"
+
+	parsec "github.com/prataprc/goparsec"
 )
 
 // Constants -
@@ -56,26 +59,85 @@ func applyFunc(fn Expr, args []Expr) Expr {
 }
 
 var coreFuncs = map[string]Func{
-	"print": printExprs,
-	"quote": quote,
-	"eval":  eval,
-	"set":   set,
-	"get":   get,
-	"put":   put,
-	"let":   let,
-	"do":    do,
-	"while": while,
-	"eq":    eq,
-	"is":    is,
-	"not":   not,
-	"if":    iff,
-	"func":  lambda,
-	"form":  form,
-	"bool":  toBool,
-	"map":   mapl,
-	"fold":  foldl,
+	"parse":  parse,
+	"print":  printExprs,
+	"quote":  quote,
+	"eval":   eval,
+	"set":    set,
+	"get":    get,
+	"put":    put,
+	"let":    let,
+	"do":     do,
+	"and":    and,
+	"or":     or,
+	"while":  while,
+	"for":    ffor,
+	"eq":     eq,
+	"is":     is,
+	"not":    not,
+	"if":     iff,
+	"func":   lambda,
+	"form":   form,
+	"bool":   toBool,
+	"map":    mapl,
+	"fold":   foldl,
+	"text":   text,
+	"concat": concat,
+	"join":   join,
+	"merge":  merge,
 	//"foldl": foldl,
 	//"foldr": foldr,
+}
+
+func parse(args []Expr) Expr {
+	if len(args) == 0 {
+		return errID
+	}
+	list := []Expr{}
+	if len(args) == 1 {
+		src, ok := args[0].Eval().(*Text)
+		if !ok {
+			return errID
+		}
+		nodes := Parse([]byte(src.Value))
+		list = parseNodes(nodes, list)
+	} else {
+		for _, arg := range args {
+			src, ok := arg.Eval().(*Text)
+			if !ok {
+				return errID
+			}
+			nodes := Parse([]byte(src.Value))
+			list = parseNodes(nodes, list)
+		}
+	}
+	if len(list) == 1 {
+		return list[0]
+	}
+	return &Alist{Name: "Alist", Value: list}
+}
+
+func parseNodes(nodes []parsec.ParsecNode, list []Expr) []Expr {
+	for _, node := range nodes {
+		switch node.(type) {
+		case []parsec.ParsecNode:
+			v := node.([]parsec.ParsecNode)
+			if len(v) == 1 {
+				expr := nodeToExpr(v[0])
+				list = append(list, expr)
+			} else {
+				l := []Expr{}
+				l = parseNodes(v, l)
+				list = append(list, &Alist{Name: "Alist", Value: l})
+			}
+		default:
+			expr := nodeToExpr(node)
+			list = append(list, expr)
+			//res := expr.Eval()
+			//debug("expr:", expr, "=>", res)
+		}
+	}
+	return list
 }
 
 func printExprs(args []Expr) Expr {
@@ -142,7 +204,7 @@ func put(args []Expr) Expr {
 	if !ok {
 		res = nullID
 	}
-	dict.Value[key.Name] = args[3].Eval()
+	dict.Value[key.Value] = args[2].Eval()
 	return res
 }
 
@@ -209,6 +271,32 @@ func let(args []Expr) Expr {
 	return res
 }
 
+func ffor(args []Expr) Expr {
+	if len(args) < 5 {
+		return errID
+	}
+	d, ok := args[0].Eval().(*Dict)
+	if !ok {
+		return errID
+	}
+	var res Expr
+	current.push(d.Value)
+	res = nullID
+	for args[1].Eval(); args[2].Eval().Equals(trueID); args[3].Eval() {
+		res = do(args[4:])
+		id, ok := res.(*ID)
+		if ok && id.Value == BREAK {
+			break
+		}
+		if ok && id.Value == CONTINUE {
+			continue
+		}
+	}
+	res = current.dict()
+	current.pop()
+	return res
+}
+
 func while(args []Expr) (res Expr) {
 	if len(args) < 2 {
 		return errID
@@ -236,6 +324,38 @@ func do(args []Expr) Expr {
 			break
 		}
 		if ok && id.Value == CONTINUE {
+			break
+		}
+	}
+	return res
+}
+
+func and(args []Expr) Expr {
+	var res Expr = nullID
+	for _, item := range args {
+		res = item.Eval()
+		id, ok := res.(*ID)
+		if !ok {
+			res = errID
+			break
+		}
+		if id.Equals(falseID) {
+			break
+		}
+	}
+	return res
+}
+
+func or(args []Expr) Expr {
+	var res Expr = nullID
+	for _, item := range args {
+		res = item.Eval()
+		id, ok := res.(*ID)
+		if !ok {
+			res = errID
+			break
+		}
+		if id.Equals(trueID) {
 			break
 		}
 	}
@@ -356,4 +476,59 @@ func foldl(args []Expr) Expr {
 		res = applyFunc(args[2].Eval(), []Expr{res, item})
 	}
 	return res
+}
+
+func text(args []Expr) Expr {
+	if len(args) != 1 {
+		return errID
+	}
+	switch v := args[0].Eval().(type) {
+	case *Text:
+		return v.Clone()
+	default:
+		return &Text{Name: "Text", Value: v.String()}
+	}
+}
+
+func concat(args []Expr) Expr {
+	sb := strings.Builder{}
+	for _, arg := range args {
+		//debug(arg.Eval())
+		s, ok := arg.Eval().(*Text)
+		if !ok {
+			return errID
+		}
+		sb.WriteString(s.Value)
+	}
+	return &Text{Name: "Text", Value: sb.String()}
+}
+
+func join(args []Expr) Expr {
+	list := []Expr{}
+	for _, arg := range args {
+		//debug(arg.Eval())
+		a, ok := arg.Eval().(*Alist)
+		if !ok {
+			return errID
+		}
+		for _, item := range a.Value {
+			list = append(list, item)
+		}
+	}
+	return &Alist{Name: "Alist", Value: list}
+}
+
+func merge(args []Expr) Expr {
+	dict := map[string]Expr{}
+	for _, arg := range args {
+		//debug(arg.Eval())
+		d, ok := arg.Eval().(*Dict)
+		if !ok {
+			return errID
+		}
+		for key, item := range d.Value {
+			dict[key] = item
+		}
+	}
+	return &Dict{Name: "Dict", Value: dict}
 }

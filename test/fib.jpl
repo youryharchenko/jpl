@@ -1,0 +1,24 @@
+#!/usr/bin/jpl
+
+(if (is [<num>] (args))
+
+    (let {n:null} 
+        (is [.n] (args))
+        (let {x: 0 y: 1 z: 0 i: 0}
+            (if (eq .n 0)
+                (set y 0)
+                (while(lt .i (- .n 1))
+                    (do
+                        (set z (+ .x .y))
+                        (set x .y)
+                        (set y .z)
+                        (set i (+ .i 1)) 
+                    )
+                )
+            )
+            (print{n:.n f:.y})
+        )
+    )
+    
+    (print "parameter must be one and number")
+)
