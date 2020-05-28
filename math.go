@@ -17,6 +17,36 @@ var mathFuncs = map[string]Func{
 	"ge":    ge,
 	"le":    le,
 	"range": rangeInt,
+	"int":   toInt,
+	"float": toFloat,
+}
+
+func toInt(args []Expr) Expr {
+	if len(args) != 1 {
+		return errID
+	}
+	switch a := args[0].Eval().(type) {
+	case *Int:
+		return a
+	case *Float:
+		return &Int{Name: "Int", Value: int(a.Value)}
+	default:
+		return errID
+	}
+}
+
+func toFloat(args []Expr) Expr {
+	if len(args) != 1 {
+		return errID
+	}
+	switch a := args[0].Eval().(type) {
+	case *Float:
+		return a
+	case *Int:
+		return &Float{Name: "Float", Value: float64(a.Value)}
+	default:
+		return errID
+	}
 }
 
 func sum(args []Expr) Expr {

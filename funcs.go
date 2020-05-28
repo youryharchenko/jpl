@@ -28,7 +28,7 @@ var (
 )
 
 func initFuncs() map[string]Func {
-	return mergeFuncs(funcs, coreFuncs, osFuncs, mathFuncs)
+	return mergeFuncs(funcs, coreFuncs, osFuncs, mathFuncs, backtrFuncs)
 }
 
 func mergeFuncs(fns map[string]Func, ext ...map[string]Func) map[string]Func {
@@ -44,6 +44,7 @@ func mergeFuncs(fns map[string]Func, ext ...map[string]Func) map[string]Func {
 }
 
 func applyFunc(fn Expr, args []Expr) Expr {
+
 	switch fnExpr := fn.Eval().(type) {
 	case *ID:
 		name := fnExpr.Value
@@ -51,10 +52,15 @@ func applyFunc(fn Expr, args []Expr) Expr {
 		if !ok {
 			return undefID
 		}
-		return f(args)
+		res := f(args)
+		//debug("applyFunc", fn.Debug(), args, res)
+		return res
 	case *Lamb:
-		return fnExpr.Apply(args)
+		res := fnExpr.Apply(args)
+		//debug("applyFunc", fn.Debug(), args, res)
+		return res
 	}
+	debug("applyFunc", fn.Debug(), args, undefID)
 	return undefID
 }
 
@@ -84,6 +90,9 @@ var coreFuncs = map[string]Func{
 	"text":   text,
 	"concat": concat,
 	"join":   join,
+	"slice":  slice,
+	"len":    length,
+	"head":   head,
 	"merge":  merge,
 	//"foldl": foldl,
 	//"foldr": foldr,
@@ -448,13 +457,17 @@ func toBool(args []Expr) Expr {
 }
 
 func mapl(args []Expr) Expr {
+	//debug("map: args", args)
 	if len(args) != 2 {
 		return errID
 	}
-	alist, ok := args[0].Eval().(*Alist)
+	e := args[0].Eval()
+	alist, ok := e.(*Alist)
 	if !ok {
+		debug("map: error", e)
 		return errID
 	}
+	//debug("map", alist.Debug())
 	list := make([]Expr, len(alist.Value))
 	for i, item := range alist.Eval().(*Alist).Value {
 		//list = append(list, applyFunc(args[1].Eval(), []Expr{item}))
@@ -516,6 +529,55 @@ func join(args []Expr) Expr {
 		}
 	}
 	return &Alist{Name: "Alist", Value: list}
+}
+
+func slice(args []Expr) Expr {
+	if len(args) < 2 {
+		return errID
+	}
+	list, ok := args[0].Eval().(*Alist)
+	if !ok {
+		return errID
+	}
+	eb, ok := args[1].Eval().(*Int)
+	if !ok {
+		return errID
+	}
+	beg := eb.Value
+	end := len(list.Value)
+	if len(args) == 3 {
+		ee, ok := args[2].Eval().(*Int)
+		if !ok {
+			return errID
+		}
+		end = ee.Value
+	}
+	if beg > end {
+		return errID
+	}
+	return &Alist{Name: "Alist", Value: list.Value[beg:end]}
+}
+
+func length(args []Expr) Expr {
+	if len(args) != 1 {
+		return errID
+	}
+	list, ok := args[0].Eval().(*Alist)
+	if !ok {
+		return errID
+	}
+	return &Int{Name: "Int", Value: len(list.Value)}
+}
+
+func head(args []Expr) Expr {
+	if len(args) != 1 {
+		return errID
+	}
+	list, ok := args[0].Eval().(*Alist)
+	if !ok {
+		return errID
+	}
+	return list.Value[0]
 }
 
 func merge(args []Expr) Expr {

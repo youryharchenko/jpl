@@ -1,0 +1,41 @@
+#!/usr/bin/jpl
+# Coins
+#
+# (print (args))
+(if (is [<list> <num>] (args))
+    # true
+    (let {n:null all:[] r:null}
+        (let {l:null}
+            (is [.l .n] (args))
+            (set r 
+                (among {k:null m:[] s:0} k .l 
+                    (do 
+                        (setu m (join .m [.k]))
+                        (setu s (+ .s .k))
+                        (if (eq .s .n)
+                            (do 
+                                # (print [.m .s ok]) 
+                                (set all (join .all [.m])) 
+                                next
+                            )
+                            (if (lt .s .n)
+                                (do 
+                                    # (print [.m .s continue]) 
+                                    continue
+                                )
+                                (do 
+                                    # (print [.m .s fail]) 
+                                    fail
+                                )                    
+                            )
+                        )
+                    )
+                )
+            )
+        )
+        (map .all print)
+    )
+
+    # false
+    (print "parameters must be two - list coins and amount, e.g. '[6 3 2 1]' 5")
+)

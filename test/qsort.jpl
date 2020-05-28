@@ -1,0 +1,46 @@
+#!/usr/bin/jpl
+# Qsort
+#
+# (print (args))
+(set qsort 
+    (func [l] 
+        (do
+            # (print {list:.l})
+            (if (le (len .l) 1)
+                # true
+                .l
+                # else
+                (get 
+                    (let {pivot:(head .l) less:[] more:[] plist:[]}
+                        # (print {pivot: .pivot less:.less more:.more plist:.plist})
+                        (map .l 
+                            (func [i]
+                                (do  
+                                    (if (lt .i .pivot) (set less (join .less [.i])))
+                                    (if (gt .i .pivot) (set more (join .more [.i])))
+                                    (if (eq .i .pivot) (set plist (join .plist [.i])))
+                                )
+                            )
+                        ) # map
+                        (set less (.qsort .less))
+                        (set more (.qsort .more))
+                        (set less (join .less .plist .more))
+                    ) # let
+                    less
+                ) # get
+            ) # if
+        )
+    ) # func
+)
+
+(if (is [<list>] (args))
+    # true
+    (let {list:null result:null}
+        (is [.list] (args))
+        (print .list)
+        (set result (.qsort .list))
+        (print .result)
+    ) # let
+    # else
+    (print "parameters must be one and a list")
+)

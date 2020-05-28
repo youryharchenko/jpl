@@ -458,12 +458,13 @@ func (lamb *Lamb) Clone() (res Expr) {
 
 // Apply -
 func (lamb *Lamb) Apply(args []Expr) (res Expr) {
+	//debug(lamb.Debug(), args)
 	if len(lamb.Params) != len(args) {
 		return errID
 	}
 	vars := map[string]Expr{}
 	for i, item := range lamb.Params {
-		vars[item.Value] = args[i]
+		vars[item.Value] = args[i].Eval()
 	}
 	current.push(vars)
 	res = lamb.Body.Eval()
