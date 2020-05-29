@@ -1,0 +1,32 @@
+#!/usr/bin/jpl
+# PingPong
+#
+(actor ping 
+    (func [e] 
+                
+            (let {mess:null count:null next:null} 
+                # (print .e)
+                (is {mess:.mess count:.count next:.next} .e)
+                (print [.count .mess])
+                (send ping .next {mess:ping count:(+ .count 1) next:ping})
+                (sleep 1)
+            )
+        
+    )
+)
+(actor pong 
+    (func [e] 
+        
+            (let {mess:null count:null next:null} 
+                # (print .e)
+                (is {mess:.mess count:.count next:.next} .e)
+                (print [.count .mess])
+                (send pong .next {mess:pong count:(+ .count 1) next:pong})
+                (sleep 1)
+            )
+    )     
+)
+(send super ping {mess:start count:0 next:pong})
+(sleep (* 10 1000))
+(stop)
+(wait)

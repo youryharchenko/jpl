@@ -42,5 +42,5 @@
         (print .result)
     ) # let
     # else
-    (print "parameters must be one and a list")
+    (print "parameters must be one and a list, e.g '[2 1 5 3 7 0 -1 10 8 3]'")
 )

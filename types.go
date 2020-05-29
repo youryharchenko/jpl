@@ -456,6 +456,8 @@ func (lamb *Lamb) Clone() (res Expr) {
 	return &Lamb{Params: lamb.Params, Body: lamb.Body, Name: lamb.Name}
 }
 
+//var lambLock sync.RWMutex
+
 // Apply -
 func (lamb *Lamb) Apply(args []Expr) (res Expr) {
 	//debug(lamb.Debug(), args)
@@ -466,9 +468,14 @@ func (lamb *Lamb) Apply(args []Expr) (res Expr) {
 	for i, item := range lamb.Params {
 		vars[item.Value] = args[i].Eval()
 	}
+	//debug("Lamb Apply", "locking...", lamb.Debug(), args)
+	//lambLock.Lock()
+	//debug("Lamb Apply", "locked", lamb.Debug(), args)
 	current.push(vars)
 	res = lamb.Body.Eval()
 	current.pop()
+	//lambLock.Unlock()
+	//debug("Lamb Apply", "Unlocked", lamb.Debug(), args)
 	return
 }
 

@@ -121,6 +121,7 @@ func patNon(args []Expr, e Expr) bool {
 }
 
 func match(pat Expr, e Expr) Expr {
+
 	patCtx := &Pattern{}
 	patCtx.begin()
 	if patCtx.matchExpr(pat, e) {
@@ -238,6 +239,9 @@ func (pat *Pattern) matchMlist(p *Mlist, e Expr) (res bool) {
 }
 
 func (pat *Pattern) begin() {
+	contextLock.RLock()
+	defer contextLock.RUnlock()
+
 	pat.clon = current.clone()
 	cl := pat.clon
 	for cl.parent != nil {
@@ -251,5 +255,7 @@ func (pat *Pattern) commit() {
 }
 
 func (pat *Pattern) rollback() {
+	contextLock.Lock()
+	defer contextLock.Unlock()
 	current = pat.clon
 }

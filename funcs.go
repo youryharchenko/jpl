@@ -28,7 +28,7 @@ var (
 )
 
 func initFuncs() map[string]Func {
-	return mergeFuncs(funcs, coreFuncs, osFuncs, mathFuncs, backtrFuncs)
+	return mergeFuncs(funcs, coreFuncs, osFuncs, mathFuncs, backtrFuncs, actorFuncs)
 }
 
 func mergeFuncs(fns map[string]Func, ext ...map[string]Func) map[string]Func {
@@ -93,6 +93,8 @@ var coreFuncs = map[string]Func{
 	"slice":  slice,
 	"len":    length,
 	"head":   head,
+	"tail":   tail,
+	"cons":   cons,
 	"merge":  merge,
 	//"foldl": foldl,
 	//"foldr": foldr,
@@ -577,7 +579,41 @@ func head(args []Expr) Expr {
 	if !ok {
 		return errID
 	}
+	if len(list.Value) < 1 {
+		return errID
+	}
 	return list.Value[0]
+}
+
+func tail(args []Expr) Expr {
+	if len(args) != 1 {
+		return errID
+	}
+	list, ok := args[0].Eval().(*Alist)
+	if !ok {
+		return errID
+	}
+	if len(list.Value) < 1 {
+		return errID
+	}
+	return &Alist{Name: "Alist", Value: list.Value[1:]}
+}
+
+func cons(args []Expr) Expr {
+	if len(args) != 2 {
+		return errID
+	}
+	e := args[1].Eval()
+	list, ok := args[0].Eval().(*Alist)
+	if !ok {
+		return errID
+	}
+	nl := make([]Expr, len(list.Value)+1)
+	nl[0] = e
+	for i, item := range list.Value {
+		nl[i+1] = item
+	}
+	return &Alist{Name: "Alist", Value: nl}
 }
 
 func merge(args []Expr) Expr {
