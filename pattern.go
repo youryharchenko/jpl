@@ -15,6 +15,7 @@ func init() {
 		"text":  patText,
 		"ref":   patRefer,
 		"list":  patAlist,
+		"apply": patApply,
 		"dict":  patDict,
 		"func":  patLamb,
 		"any":   patAny,
@@ -73,6 +74,13 @@ func patRefer(args []Expr, e Expr) bool {
 
 func patAlist(args []Expr, e Expr) bool {
 	if _, ok := e.(*Alist); ok {
+		return true
+	}
+	return false
+}
+
+func patApply(args []Expr, e Expr) bool {
+	if _, ok := e.(*Llist); ok {
 		return true
 	}
 	return false

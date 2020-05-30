@@ -12,6 +12,7 @@ var mathFuncs = map[string]Func{
 	"/":     div,
 	"%":     mod,
 	"pow":   pow,
+	"abs":   abs,
 	"gt":    gt,
 	"lt":    lt,
 	"ge":    ge,
@@ -209,6 +210,26 @@ func pow(args []Expr) Expr {
 		return &Int{Value: int(math.Pow(x, y)), Name: "Num"}
 	}
 	return &Float{Value: math.Pow(x, y), Name: "Num"}
+}
+
+func abs(args []Expr) Expr {
+	if len(args) != 1 {
+		return errID
+	}
+	switch a := args[0].Eval().(type) {
+	case *Int:
+		if a.Value < 0 {
+			return &Int{Name: "Int", Value: a.Value * -1}
+		}
+		return a
+	case *Float:
+		if a.Value < 0 {
+			return &Float{Name: "Float", Value: a.Value * -1.0}
+		}
+		return a
+	default:
+		return errID
+	}
 }
 
 func compareFloat(e1 Expr, e2 Expr, f func(x float64, y float64) bool) (bool, error) {

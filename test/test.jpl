@@ -1,0 +1,267 @@
+#!/usr/bin/jpl
+#
+# Test
+#
+(print 
+    (and
+        (eq (+ 2 3.1 5 7) 17.1)
+        (eq (* 2 3 5.4 7) 226.8)
+        (eq (+ 1 (+ 1 (+ 1 1))) 4)
+        (eq (* 1 (* 2 (* 3 4))) 24)  
+        (eq (* 1 (* 2 (* 3 4.0))) 24.0)
+        (eq (- 3 2) 1) 
+        (eq (- 3.0 2) 1.0) 
+        (eq (- 3 2.0) 1.0) 
+        (eq (- 3.0 2.0)  1.0)
+        (eq (/ 4 2) 2.0) 
+        (eq (/ 4.0 2) 2.0) 
+        (eq (/ 4 2.0) 2.0) 
+        (eq (/ 4.0 2.0) 2.0)
+        (eq (% 3 2) 1) 
+        (eq (% 3.0 2) 1) 
+        (eq (% 3 2.0) 1) 
+        (eq (% 3.0 2.0) 1)
+
+        (eq (gt 2 1) true)
+        (eq (gt 1 2) false)
+        (eq (gt 2.0 1.0) true)
+        (eq (gt 1.0 2.0) false)
+        (eq (gt 2.0 1)  true)
+        (eq (gt 1.0 2) false)
+        (eq (lt 1.0 2) true)
+        (eq (le 1.0 2) true)
+        (eq (le 1.0 1) true)
+        (eq (le 2.0 1) false)
+        (eq (ge 1.0 2) false)
+        (eq (ge 1.0 1) true)
+        (eq (ge 2.0 1) true)
+
+        (eq (quote) null)
+        (eq (quote 1) 1)
+        (eq (quote (+ 1 1)) (quote (+ 1 1)))
+        (is <apply> (quote (+ 1 1)))
+
+        (eq (eval) null)
+        (eq (eval (+ 1 1)) 2)
+        (eq (eval (quote (+ 1 1))) 2)
+
+        (eq (pow 2 10) 1024)
+        (lt (abs (- (pow 2 0.5) 1.4142)) 0.0001)
+        (eq (pow 1.5 2) 2.25)
+
+        (eq (let {i:10 j:2}
+            (if (eq .j 0) (print zero_divide) (set i (/ .i .j)))
+        ) {i:5 j:2})
+        (eq (let {i:10 j:2}
+            (if (gt .j 0) (set i (/ .i .j)) (print zero_divide))
+        ) {i:5 j:2})
+
+        (eq (not true) false)
+        (eq (not false) true)
+        (eq (not a) error)
+
+        (eq (let {i:0 n:10}
+            (while (lt .i 10)
+                (if (eq .i 5) break)
+                (set i (+ .i 1))
+            )
+        ) {i:5 n:10})
+
+        (eq (is 1 1) true)
+        (eq (is 1 a) false)
+        (eq (is [1 <atom>] [1 2]) true)
+        (eq (is (do) null) false)
+        (eq (is null (do)) true)
+
+        (eq .a undefined)
+        (eq (is .a 4) false)
+        (eq .u undefined)
+        (eq (is .u 1) false)
+        (eq (set u null) undefined)
+        (eq (is .u 1) true)
+        (eq (is .u null) false)
+        (eq (is .u 1) true)
+
+        (eq (let {x:0 y:1 z:null}
+            (is .u 1) (is .x 0) (is .y 0) (is .z 2)
+        ) {x:0 y:1 z:2})
+
+        (eq (let {x:0 y:1 z:null}
+           (is [.x .y .z][0 1 2])
+        ) {x:0 y:1 z:2})
+        (eq (let {x:0 y:1 z:null}
+           (is [.z .y .x][2 1 0])
+        ) {x:0 y:1 z:2})
+        (eq (let {x:0 y:1 z:null}
+           (is [.z .y .x][2 0 0])
+        ) {x:0 y:1 z:null})
+        (eq (let {x:0 y:1 z:null}
+           (is [.z .y .x][2 1 1])
+        ) {x:0 y:1 z:null})
+
+        (eq (let {x:0 y:1 z:null}
+           (is {a:.x b:.y c:.z}{a:0 b:1 c:2 d:3})
+        ) {x:0 y:1 z:2})
+        (eq (let {x:0 y:1 z:null}
+           (is {c:.z b:.y a:.x}{a:0 b:1 c:2 d:3})
+        ) {x:0 y:1 z:2})
+        (eq (let {x:0 y:1 z:null}
+           (is {c:.z b:.y a:.x}{a:1 b:1 c:2 d:3})
+        ) {x:0 y:1 z:null})
+        (eq (let {x:0 y:1 z:null}
+           (is {c:.z b:.y a:.x}{a:0 b:0 c:2 d:3})
+        ) {x:0 y:1 z:null})
+
+        (eq [(is <atom> a) (is <atom> 1)(is <atom> .u)(is <atom> (quote .u)) (is <atom> []) (is <atom> {})]
+            [true true true true false false]
+        )
+        (eq [(is <id> a) (is <id> 1)(is <id> .u)(is <id> (quote .u)) (is <id> []) (is <id> {})]
+            [true false false false false false]
+        )
+        (eq [(is <num> a) (is <num> 1)(is <num> .u)(is <num> (quote .u)) (is <num> []) (is <num> {})]
+            [false true true false false false]
+        )
+        (eq [(is <ref> a) (is <ref> 1)(is <ref> .u)(is <ref> (quote .u)) (is <ref> []) (is <ref> {})]
+            [false false false true false false]
+        )
+        (eq [(is <list> a) (is <list> 1)(is <list> .u)(is <list> (quote .u)) (is <list> []) (is <list> {})]
+            [false false false false true false]
+        )
+        (eq [(is <dict> a) (is <dict> 1)(is <dict> .u)(is <dict> (quote .u)) (is <dict> []) (is <dict> {})]
+            [false false false false false true]
+        )
+        (eq (is <func> (func [i] (set i (+ .i 1)))) true)
+        (eq (is <apply> (quote (set i (+ .i 1)))) true)
+        (eq [(is <any> a) (is <any> 1)(is <any> .u)(is <any> (quote .u)) (is <any> []) (is <any> {})]
+            [true true true true true true]
+        )
+        (eq [(is <non <atom>> a) (is <non <atom>> 1)(is <non <atom>> .u)(is <non <atom>> (quote .u)) (is <non <atom>> []) (is <non <atom>> {})]
+            [false false false false true true]
+        )
+
+        (eq (let {plus:+ pat:atom a:1 b:2 c:2 r:null}
+            (is .r [(form a) (form .a) (form 0) (form [.b .c]) (form {a:.b b:.c}) (form (.plus .b .c)) (eval (form (.plus .b .c))) (form <.pat>)])
+        ) {plus:+ pat:atom a:1 b:2 c:2 r:[a 1 0 [2 2] {a:2 b:2} (quote (+ 2 2)) 4 <atom>]})
+
+        (eq [(is "abc" "abc") (is <text> "abc") (is <text> abc)] 
+            [true true false]
+        )
+
+        (eq [(bool 1) (bool 0) (bool []) (bool {}) (bool [.a]) (bool {a:.a})]
+            [true false false false true true]
+        )
+        (eq [(bool <>) (bool <atom>) (bool null) (bool .qwe) (bool .u) (bool error)]
+            [false true false false true true]
+        )
+        (eq [(bool true) (bool false) (bool "") (bool "a")]
+            [true false false true] 
+        )
+
+        (eq (map [1 2 3] quote)
+            [1 2 3]
+        )
+        (eq (map [1 2 3] (func [i] (+ .i 1)))
+            [2 3 4]
+        )
+        (eq {r:[1 4 9]} (let {sqr:(func[i] (* .i .i)) r:null}
+            (set r (map [1 2 3] .sqr))
+        ))
+        (eq {r:[1 8 27]} (let {a:1 b:2 c:3 f:(func[i] (* .i .i .i)) r:null}
+            (set r (map [.a .b .c] .f))
+        ))
+
+        (eq (fold [1 2 3] 0 +) 6)
+
+        (eq (range 0 10) [0 1 2 3 4 5 6 7 8 9])
+        (eq (range 9 -1) [9 8 7 6 5 4 3 2 1 0])
+        
+        (lt (abs (- 3.1415 (* 4 (fold (range 0 10000) 0 (func [p i] (+ .p (/ (pow -1 .i) (+ 1 (* 2 .i))))))))) 0.0001)
+
+        (is <list> (env))
+        (is <text> (host))
+        (is {user:<text> lang:<text> path:<text> pwd:<text>} {user:(env "USER") lang:(env "LANG") path:(env "PATH") pwd:(env "PWD")})
+        (is {args:<list> pid:<num>} {args:(args) pid:(pid)})
+        
+        (eq {wd:(pwd)} (let {wd:null}
+            (set wd (cd ".."))
+            (cd .wd)
+        ))
+
+        (eq 010 8)
+        (eq 0xA 10)
+
+        (eq [(env "HELLO") (setenv "HELLO" "World!") (env "HELLO") (unsetenv "HELLO") (env "HELLO")]
+            ["" "" "World!" "World!" ""]
+        )
+
+        (gt (fold (map (get (cmd "ls" "-al") out) (func[i] 1)) 0 +) 0)
+        (gt (fold (map (get (cmd "ps" "--no-headers") out) (func[i] 1)) 0 +) 0)
+        (gt (fold (map (env) (func[i] 1)) 0 +) 0)
+
+        (eq (let {d: {a:null b:0 c:a}}
+            (put .d a true)
+            (put .d b (+ (get .d b) 1))
+            (put .d c b)
+        ) {d: {a:true b:1 c:b}})
+
+        (eq [(text a) (text 0) (text [1 2 3]) (text {a:null b:0 c:a}) (text .old)] 
+            ["a" "0" "[1 2 3]" "{a:null b:0 c:a}" "undefined"]
+        )
+
+        (eq (concat "Hello" "," " " (text world) "!") "Hello, world!")
+        (eq (join [1] [2 3] (range 4 10) [10]) [1 2 3 4 5 6 7 8 9 10]) 
+        (eq (merge {a:0} {b:1} (let {c:null} (set c (+ 1 1))) {}) {a:0 b:1 c:2})
+        (eq (merge {a:0 b:0 c:0} {b:1} (let {c:null} (set c (+ 1 1)))) {a:0 b:1 c:2})
+
+        (eq (and
+                (do  true)
+                (do  true)
+                (do  false)
+                (do  true)
+        ) false)
+
+        (eq (or
+                (do  false)
+                (do  true)
+                (do  false)
+                (do  false)
+        ) true)
+
+        (eq (for {i:null j:null n:10} (set i 0) (lt .i .n)  (set i (+ .i 1))
+            (set j (* .i .i))
+        ) {i:10 j:81 n:10})
+
+        (eq (for {i:null j:null n:10} (set i 0) (lt .i .n) (set i (+ .i 1))
+            (set j (* .i .i))
+            (if (eq .j 49) break)
+        ) {i:7 j:49 n:10}) 
+
+        (eq (parse "abc") abc)
+        (eq (parse "1") 1)
+        (eq (parse "a b c" "1 2 3" "(+ 1  2)") [[a b c] [1 2 3] (quote (+ 1 2))])
+
+        (eq (slice (range 0 10) 0) [0 1 2 3 4 5 6 7 8 9])
+        (eq (slice (range 0 10) 2) [2 3 4 5 6 7 8 9])
+        (eq (slice (range 0 10) 0 10) [0 1 2 3 4 5 6 7 8 9])
+        (eq (slice (range 0 10) 0 1) [0])
+        (eq (slice (range 0 10) 3 5) [3 4])
+
+        (eq (len (slice (range 0 10) 0)) 10)
+        (eq (len (slice (range 0 10) 1 3)) 2)
+        (eq (len (slice (range 0 10) 5 3)) error)
+        (eq (len (slice (range 0 10) 7)) 3)
+
+        (eq (int 0.5) 0)
+        (eq (float 0) 0.0)
+        (eq (head [1 2 3]) 1)
+        (eq (head [1]) 1)
+        (eq (head []) error)
+        (eq (tail [1 2 3]) [2 3])
+        (eq (tail [1]) [])
+        (eq (tail []) error)
+        (eq (cons [1 2] 0) [0 1 2])
+        (eq (cons [] 0) [0])
+        (eq (fold (range 0 10) [] cons) [9 8 7 6 5 4 3 2 1 0])
+    
+    ) # and
+) # print

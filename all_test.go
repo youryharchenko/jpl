@@ -1,12 +1,23 @@
 package jpl
 
 import (
-	"strconv"
+	"flag"
+	"io/ioutil"
 	"testing"
-
-	parsec "github.com/prataprc/goparsec"
 )
 
+func TestAll(t *testing.T) {
+	file, err := ioutil.ReadFile("test/test.jpl")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	flag.Parse()
+	nodes := Parse(file)
+	EvalNodes(nodes)
+}
+
+/*
 func Test1(t *testing.T) {
 	s := parsec.NewScanner([]byte("  "))
 	v, _ := Y(s)
@@ -56,3 +67,4 @@ func Test6(t *testing.T) {
 	}
 	t.Error("")
 }
+*/

@@ -70,10 +70,15 @@ func flagArgs(args []Expr) Expr {
 	if len(args) > 0 {
 		return errID
 	}
+	var list []Expr
 	a := flag.Args()
-	list := make([]Expr, len(a)-1)
-	for i, arg := range a[1:] {
-		list[i] = parse([]Expr{&Text{Name: "Text", Value: arg}})
+	if len(a) == 0 {
+		list = []Expr{}
+	} else {
+		list = make([]Expr, len(a)-1)
+		for i, arg := range a[1:] {
+			list[i] = parse([]Expr{&Text{Name: "Text", Value: arg}})
+		}
 	}
 	return &Alist{Name: "Alist", Value: list}
 }

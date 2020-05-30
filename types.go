@@ -2,6 +2,7 @@ package jpl
 
 import (
 	"fmt"
+	"sort"
 
 	parsec "github.com/prataprc/goparsec"
 )
@@ -345,8 +346,13 @@ type Dict struct {
 func (dict *Dict) String() (res string) {
 	res = "{"
 	sep := ""
-	for key, item := range dict.Value {
-		res += fmt.Sprintf("%s%s:%v", sep, key, item)
+	keys := []string{}
+	for key := range dict.Value {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		res += fmt.Sprintf("%s%s:%v", sep, key, dict.Value[key])
 		sep = " "
 	}
 	res += "}"
