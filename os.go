@@ -7,19 +7,21 @@ import (
 	"strings"
 )
 
-var osFuncs = map[string]Func{
-	"host":     host,
-	"env":      env,
-	"setenv":   setenv,
-	"unsetenv": unsetenv,
-	"args":     flagArgs,
-	"pid":      execPid,
-	"pwd":      pwd,
-	"cd":       chdir,
-	"cmd":      runCmd,
+func osFuncs() map[string]Func {
+	return map[string]Func{
+		"host":     host,
+		"env":      env,
+		"setenv":   setenv,
+		"unsetenv": unsetenv,
+		"args":     flagArgs,
+		"pid":      execPid,
+		"pwd":      pwd,
+		"cd":       chdir,
+		"cmd":      runCmd,
+	}
 }
 
-func host(args []Expr) Expr {
+func host(args []Expr, ctxName string) Expr {
 	if len(args) != 0 {
 		return errID
 	}
@@ -31,7 +33,7 @@ func host(args []Expr) Expr {
 	return &Text{Name: "Text", Value: name}
 }
 
-func env(args []Expr) Expr {
+func env(args []Expr, ctxName string) Expr {
 	if len(args) > 1 {
 		return errID
 	}
@@ -40,7 +42,7 @@ func env(args []Expr) Expr {
 		list := make([]Expr, len(envs))
 		for i, item := range envs {
 			var key, val string
-			//debug("env", item)
+			//engine.debug("env", item)
 			e := strings.Split(item, "=")
 			switch len(e) {
 			case 0:
@@ -66,7 +68,7 @@ func env(args []Expr) Expr {
 	return &Text{Name: "Text", Value: os.Getenv(name.Value)}
 }
 
-func flagArgs(args []Expr) Expr {
+func flagArgs(args []Expr, ctxName string) Expr {
 	if len(args) > 0 {
 		return errID
 	}
@@ -77,13 +79,13 @@ func flagArgs(args []Expr) Expr {
 	} else {
 		list = make([]Expr, len(a)-1)
 		for i, arg := range a[1:] {
-			list[i] = parse([]Expr{&Text{Name: "Text", Value: arg}})
+			list[i] = parse([]Expr{&Text{Name: "Text", Value: arg}}, ctxName)
 		}
 	}
 	return &Alist{Name: "Alist", Value: list}
 }
 
-func execArgs(args []Expr) Expr {
+func execArgs(args []Expr, ctxName string) Expr {
 	if len(args) > 0 {
 		return errID
 	}
@@ -94,14 +96,14 @@ func execArgs(args []Expr) Expr {
 	return &Alist{Name: "Alist", Value: list}
 }
 
-func execPid(args []Expr) Expr {
+func execPid(args []Expr, ctxName string) Expr {
 	if len(args) > 0 {
 		return errID
 	}
 	return &Int{Name: "Num", Value: os.Getpid()}
 }
 
-func pwd(args []Expr) Expr {
+func pwd(args []Expr, ctxName string) Expr {
 	if len(args) > 0 {
 		return errID
 	}
@@ -112,7 +114,7 @@ func pwd(args []Expr) Expr {
 	return &Text{Name: "Text", Value: dir}
 }
 
-func chdir(args []Expr) Expr {
+func chdir(args []Expr, ctxName string) Expr {
 	if len(args) != 1 {
 		return errID
 	}
@@ -131,7 +133,7 @@ func chdir(args []Expr) Expr {
 	return &Text{Name: "Text", Value: wd}
 }
 
-func setenv(args []Expr) Expr {
+func setenv(args []Expr, ctxName string) Expr {
 	if len(args) != 2 {
 		return errID
 	}
@@ -151,7 +153,7 @@ func setenv(args []Expr) Expr {
 	return &Text{Name: "Text", Value: old}
 }
 
-func unsetenv(args []Expr) Expr {
+func unsetenv(args []Expr, ctxName string) Expr {
 	if len(args) != 1 {
 		return errID
 	}
@@ -167,7 +169,7 @@ func unsetenv(args []Expr) Expr {
 	return &Text{Name: "Text", Value: old}
 }
 
-func runCmd(args []Expr) Expr {
+func runCmd(args []Expr, ctxName string) Expr {
 	name, ok := args[0].Eval().(*Text)
 	if !ok {
 		return errID
@@ -181,7 +183,7 @@ func runCmd(args []Expr) Expr {
 		params[i-1] = a.Value
 	}
 	cmd := exec.Command(name.Value, params...)
-	//debug(cmd)
+	//engine.debug(cmd)
 	res, err := cmd.CombinedOutput()
 	var errMess Expr
 	if err != nil {

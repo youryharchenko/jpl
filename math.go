@@ -5,24 +5,26 @@ import (
 	"math"
 )
 
-var mathFuncs = map[string]Func{
-	"+":     sum,
-	"-":     sub,
-	"*":     prod,
-	"/":     div,
-	"%":     mod,
-	"pow":   pow,
-	"abs":   abs,
-	"gt":    gt,
-	"lt":    lt,
-	"ge":    ge,
-	"le":    le,
-	"range": rangeInt,
-	"int":   toInt,
-	"float": toFloat,
+func mathFuncs() map[string]Func {
+	return map[string]Func{
+		"+":     sum,
+		"-":     sub,
+		"*":     prod,
+		"/":     div,
+		"%":     mod,
+		"pow":   pow,
+		"abs":   abs,
+		"gt":    gt,
+		"lt":    lt,
+		"ge":    ge,
+		"le":    le,
+		"range": rangeInt,
+		"int":   toInt,
+		"float": toFloat,
+	}
 }
 
-func toInt(args []Expr) Expr {
+func toInt(args []Expr, ctxName string) Expr {
 	if len(args) != 1 {
 		return errID
 	}
@@ -30,13 +32,13 @@ func toInt(args []Expr) Expr {
 	case *Int:
 		return a
 	case *Float:
-		return &Int{Name: "Int", Value: int(a.Value)}
+		return &Int{Name: "Int", Value: int(a.Value), CtxName: ctxName}
 	default:
 		return errID
 	}
 }
 
-func toFloat(args []Expr) Expr {
+func toFloat(args []Expr, ctxName string) Expr {
 	if len(args) != 1 {
 		return errID
 	}
@@ -44,13 +46,13 @@ func toFloat(args []Expr) Expr {
 	case *Float:
 		return a
 	case *Int:
-		return &Float{Name: "Float", Value: float64(a.Value)}
+		return &Float{Name: "Float", Value: float64(a.Value), CtxName: ctxName}
 	default:
 		return errID
 	}
 }
 
-func sum(args []Expr) Expr {
+func sum(args []Expr, ctxName string) Expr {
 	if len(args) < 2 {
 		return errID
 	}
@@ -71,10 +73,10 @@ func sum(args []Expr) Expr {
 		return &Int{Value: si, Name: "Num"}
 	}
 	sf += float64(si)
-	return &Float{Value: sf, Name: "Num"}
+	return &Float{Value: sf, Name: "Num", CtxName: ctxName}
 }
 
-func sub(args []Expr) Expr {
+func sub(args []Expr, ctxName string) Expr {
 	if len(args) != 2 {
 		return errID
 	}
@@ -102,12 +104,12 @@ func sub(args []Expr) Expr {
 		}
 	}
 	if bInt {
-		return &Int{Value: si, Name: "Num"}
+		return &Int{Value: si, Name: "Num", CtxName: ctxName}
 	}
-	return &Float{Value: sf, Name: "Num"}
+	return &Float{Value: sf, Name: "Num", CtxName: ctxName}
 }
 
-func prod(args []Expr) Expr {
+func prod(args []Expr, ctxName string) Expr {
 	if len(args) < 2 {
 		return errID
 	}
@@ -125,13 +127,13 @@ func prod(args []Expr) Expr {
 		}
 	}
 	if bInt {
-		return &Int{Value: si, Name: "Num"}
+		return &Int{Value: si, Name: "Num", CtxName: ctxName}
 	}
 	sf *= float64(si)
-	return &Float{Value: sf, Name: "Num"}
+	return &Float{Value: sf, Name: "Num", CtxName: ctxName}
 }
 
-func div(args []Expr) Expr {
+func div(args []Expr, ctxName string) Expr {
 	if len(args) != 2 {
 		return errID
 	}
@@ -153,10 +155,10 @@ func div(args []Expr) Expr {
 			}
 		}
 	}
-	return &Float{Value: sf, Name: "Num"}
+	return &Float{Value: sf, Name: "Num", CtxName: ctxName}
 }
 
-func mod(args []Expr) Expr {
+func mod(args []Expr, ctxName string) Expr {
 	if len(args) != 2 {
 		return errID
 	}
@@ -178,10 +180,10 @@ func mod(args []Expr) Expr {
 			}
 		}
 	}
-	return &Int{Value: si, Name: "Num"}
+	return &Int{Value: si, Name: "Num", CtxName: ctxName}
 }
 
-func pow(args []Expr) Expr {
+func pow(args []Expr, ctxName string) Expr {
 	if len(args) != 2 {
 		return errID
 	}
@@ -207,24 +209,24 @@ func pow(args []Expr) Expr {
 		}
 	}
 	if bInt {
-		return &Int{Value: int(math.Pow(x, y)), Name: "Num"}
+		return &Int{Value: int(math.Pow(x, y)), Name: "Num", CtxName: ctxName}
 	}
 	return &Float{Value: math.Pow(x, y), Name: "Num"}
 }
 
-func abs(args []Expr) Expr {
+func abs(args []Expr, ctxName string) Expr {
 	if len(args) != 1 {
 		return errID
 	}
 	switch a := args[0].Eval().(type) {
 	case *Int:
 		if a.Value < 0 {
-			return &Int{Name: "Int", Value: a.Value * -1}
+			return &Int{Name: "Int", Value: a.Value * -1, CtxName: ctxName}
 		}
 		return a
 	case *Float:
 		if a.Value < 0 {
-			return &Float{Name: "Float", Value: a.Value * -1.0}
+			return &Float{Name: "Float", Value: a.Value * -1.0, CtxName: ctxName}
 		}
 		return a
 	default:
@@ -307,7 +309,7 @@ func compareNum(e1 Expr, e2 Expr, fInt func(x int, y int) bool, fFloat func(x fl
 	return false, fmt.Errorf("error compareNum")
 }
 
-func gt(args []Expr) Expr {
+func gt(args []Expr, ctxName string) Expr {
 	if len(args) != 2 {
 		return errID
 	}
@@ -324,7 +326,7 @@ func gt(args []Expr) Expr {
 	return errID
 }
 
-func lt(args []Expr) Expr {
+func lt(args []Expr, ctxName string) Expr {
 	if len(args) != 2 {
 		return errID
 	}
@@ -341,7 +343,7 @@ func lt(args []Expr) Expr {
 	return errID
 }
 
-func ge(args []Expr) Expr {
+func ge(args []Expr, ctxName string) Expr {
 	if len(args) != 2 {
 		return errID
 	}
@@ -358,7 +360,7 @@ func ge(args []Expr) Expr {
 	return errID
 }
 
-func le(args []Expr) Expr {
+func le(args []Expr, ctxName string) Expr {
 	if len(args) != 2 {
 		return errID
 	}
@@ -375,7 +377,7 @@ func le(args []Expr) Expr {
 	return errID
 }
 
-func rangeInt(args []Expr) Expr {
+func rangeInt(args []Expr, ctxName string) Expr {
 	if len(args) != 2 {
 		return errID
 	}
@@ -389,16 +391,16 @@ func rangeInt(args []Expr) Expr {
 		list = make([]Expr, i2.Value-i1.Value)
 		for i := i1.Value; i < i2.Value; i++ {
 			//list = append(list, &Int{Name: "Num", Node: nil, Value: i})
-			list[i-i1.Value] = &Int{Name: "Num", Node: nil, Value: i}
+			list[i-i1.Value] = &Int{Name: "Num", Node: nil, Value: i, CtxName: ctxName}
 		}
 	} else {
 		list = make([]Expr, i1.Value-i2.Value)
 		cnt := 0
 		for i := i1.Value; i > i2.Value; i-- {
 			//list = append(list, &Int{Name: "Num", Node: nil, Value: i})
-			list[cnt] = &Int{Name: "Num", Node: nil, Value: i}
+			list[cnt] = &Int{Name: "Num", Node: nil, Value: i, CtxName: ctxName}
 			cnt++
 		}
 	}
-	return &Alist{Name: "Alist", Node: nil, Value: list}
+	return &Alist{Name: "Alist", Node: nil, Value: list, CtxName: ctxName}
 }

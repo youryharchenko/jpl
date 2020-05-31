@@ -1,0 +1,5 @@
+(lt (abs (- 3.1415 (* 4 (fold (range 0 10) 0 (func [p i] (+ .p (/ (pow -1 .i) (+ 1 (* 2 .i))))))))) 0.0001)
+(abs (- 3.1415 (* 4 (fold (range 0 10) 0 (func [p i] (+ .p (/ (pow -1 .i) (+ 1 (* 2 .i)))))))))
+(- 3.1415 (* 4 (fold (range 0 10) 0 (func [p i] (+ .p (/ (pow -1 .i) (+ 1 (* 2 .i))))))))
+(* 4 (fold (range 0 10) 0 (func [p i] (+ .p (/ (pow -1 .i) (+ 1 (* 2 .i)))))))
+(fold (range 0 2) 0 (func [p i] (do (print [.p .i]) (+ .p (/ (pow -1 .i) (+ 1 (* 2 .i)))))))

@@ -13,8 +13,9 @@ func TestAll(t *testing.T) {
 		return
 	}
 	flag.Parse()
-	nodes := Parse(file)
-	EvalNodes(nodes)
+	eng := New()
+	nodes := eng.Parse(file)
+	eng.EvalNodes(nodes)
 }
 
 /*

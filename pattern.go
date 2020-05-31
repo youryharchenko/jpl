@@ -3,10 +3,10 @@ package jpl
 // Match -
 type Match func([]Expr, Expr) bool
 
-var matches map[string]Match
+//var matches map[string]Match
 
-func init() {
-	matches = map[string]Match{
+func (jpl *JPL) initMatches() {
+	jpl.matches = map[string]Match{
 		"atom":  patAtom,
 		"id":    patID,
 		"num":   patNum,
@@ -107,30 +107,30 @@ func patAny(args []Expr, e Expr) bool {
 func patNon(args []Expr, e Expr) bool {
 	pat, ok := args[0].(*Mlist)
 	if !ok {
-		//debug("patNon", "not Mlist")
+		//engine.debug("patNon", "not Mlist")
 		return false
 	}
 	if len(pat.Value) == 0 {
-		//debug("patNon", "len == 0", len(pat.Value))
+		//engine.debug("patNon", "len == 0", len(pat.Value))
 		return false
 	}
 	name, ok := pat.Value[0].Eval().(*ID)
 	if !ok {
-		//debug("patNon", "not ID")
+		//engine.debug("patNon", "not ID")
 		return false
 	}
 
-	f, ok := matches[name.Value]
+	f, ok := engine.matches[name.Value]
 	if !ok {
-		//debug("patNon", "not found", name.Value)
+		//engine.debug("patNon", "not found", name.Value)
 		return false
 	}
 	return !f(pat.Value[1:], e)
 }
 
-func match(pat Expr, e Expr) Expr {
+func match(pat Expr, e Expr, ctxName string) Expr {
 
-	patCtx := &Pattern{}
+	patCtx := &Pattern{ctxName: ctxName}
 	patCtx.begin()
 	if patCtx.matchExpr(pat, e) {
 		patCtx.commit()
@@ -142,7 +142,8 @@ func match(pat Expr, e Expr) Expr {
 
 // Pattern -
 type Pattern struct {
-	clon *Context
+	clon    *Context
+	ctxName string
 }
 
 func (pat *Pattern) matchExpr(p Expr, e Expr) (res bool) {
@@ -182,9 +183,9 @@ func (pat *Pattern) matchFloat(p *Float, e Expr) (res bool) {
 }
 
 func (pat *Pattern) matchRefer(p *Refer, e Expr) (res bool) {
-	if current.bound(p.Value) {
-		if current.get(p.Value).Equals(nullID) {
-			current.set(p.Value, e)
+	if engine.current[pat.ctxName].bound(p.Value) {
+		if engine.current[pat.ctxName].get(p.Value).Equals(nullID) {
+			engine.current[pat.ctxName].set(p.Value, e)
 			return true
 		}
 		return p.Eval().Equals(e)
@@ -239,7 +240,7 @@ func (pat *Pattern) matchMlist(p *Mlist, e Expr) (res bool) {
 		return false
 	}
 	name := nameID.Value
-	f, ok := matches[name]
+	f, ok := engine.matches[name]
 	if !ok {
 		return false
 	}
@@ -247,10 +248,10 @@ func (pat *Pattern) matchMlist(p *Mlist, e Expr) (res bool) {
 }
 
 func (pat *Pattern) begin() {
-	contextLock.RLock()
-	defer contextLock.RUnlock()
+	engine.treeLock.RLock()
+	defer engine.treeLock.RUnlock()
 
-	pat.clon = current.clone()
+	pat.clon = engine.current[pat.ctxName].clone()
 	cl := pat.clon
 	for cl.parent != nil {
 		cl.parent = cl.parent.clone()
@@ -263,7 +264,7 @@ func (pat *Pattern) commit() {
 }
 
 func (pat *Pattern) rollback() {
-	contextLock.Lock()
-	defer contextLock.Unlock()
-	current = pat.clon
+	engine.treeLock.Lock()
+	defer engine.treeLock.Unlock()
+	engine.current[pat.ctxName] = pat.clon
 }

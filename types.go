@@ -8,7 +8,7 @@ import (
 )
 
 // Func -
-type Func func([]Expr) Expr
+type Func func([]Expr, string) Expr
 
 // Expr -
 type Expr interface {
@@ -16,15 +16,17 @@ type Expr interface {
 	Eval() Expr
 	Equals(Expr) bool
 	Clone() Expr
+	ChangeContext(string)
 	Debug() string
 }
 
 // Int -
 type Int struct {
 	Expr
-	Node  parsec.ParsecNode
-	Name  string
-	Value int
+	Node    parsec.ParsecNode
+	Name    string
+	Value   int
+	CtxName string
 }
 
 func (num *Int) String() (res string) {
@@ -57,12 +59,18 @@ func (num *Int) Clone() (res Expr) {
 	return &Int{Value: num.Value, Name: num.Name, Node: num.Node}
 }
 
+// ChangeContext -
+func (num *Int) ChangeContext(name string) {
+	num.CtxName = name
+}
+
 // Float -
 type Float struct {
 	Expr
-	Node  parsec.ParsecNode
-	Name  string
-	Value float64
+	Node    parsec.ParsecNode
+	Name    string
+	Value   float64
+	CtxName string
 }
 
 func (num *Float) String() (res string) {
@@ -95,12 +103,18 @@ func (num *Float) Clone() (res Expr) {
 	return &Float{Value: num.Value, Name: num.Name, Node: num.Node}
 }
 
+// ChangeContext -
+func (num *Float) ChangeContext(name string) {
+	num.CtxName = name
+}
+
 // ID -
 type ID struct {
 	Expr
-	Node  parsec.ParsecNode
-	Name  string
-	Value string
+	Node    parsec.ParsecNode
+	Name    string
+	Value   string
+	CtxName string
 }
 
 func (id *ID) String() (res string) {
@@ -129,12 +143,18 @@ func (id *ID) Clone() (res Expr) {
 	return &ID{Value: id.Value, Name: id.Name, Node: id.Node}
 }
 
+// ChangeContext -
+func (id *ID) ChangeContext(name string) {
+	id.CtxName = name
+}
+
 // Refer -
 type Refer struct {
 	Expr
-	Node  parsec.ParsecNode
-	Name  string
-	Value string
+	Node    parsec.ParsecNode
+	Name    string
+	Value   string
+	CtxName string
 }
 
 func (ref *Refer) String() (res string) {
@@ -148,7 +168,7 @@ func (ref *Refer) Debug() (res string) {
 
 // Eval -
 func (ref *Refer) Eval() (res Expr) {
-	return current.get(ref.Value)
+	return engine.current[ref.CtxName].get(ref.Value)
 }
 
 // Equals -
@@ -160,15 +180,21 @@ func (ref *Refer) Equals(e Expr) (res bool) {
 
 // Clone -
 func (ref *Refer) Clone() (res Expr) {
-	return &Refer{Value: ref.Value, Name: ref.Name, Node: ref.Node}
+	return &Refer{Value: ref.Value, Name: ref.Name, Node: ref.Node, CtxName: ref.CtxName}
+}
+
+// ChangeContext -
+func (ref *Refer) ChangeContext(name string) {
+	ref.CtxName = name
 }
 
 // Alist -
 type Alist struct {
 	Expr
-	Node  parsec.ParsecNode
-	Name  string
-	Value []Expr
+	Node    parsec.ParsecNode
+	Name    string
+	Value   []Expr
+	CtxName string
 }
 
 func (alist *Alist) String() (res string) {
@@ -193,7 +219,7 @@ func (alist *Alist) Eval() (res Expr) {
 	for _, item := range alist.Value {
 		a = append(a, item.Eval())
 	}
-	return &Alist{Node: alist.Node, Name: alist.Name, Value: a}
+	return &Alist{Node: alist.Node, Name: alist.Name, Value: a, CtxName: alist.CtxName}
 }
 
 // Equals -
@@ -213,15 +239,24 @@ func (alist *Alist) Equals(e Expr) (res bool) {
 
 // Clone -
 func (alist *Alist) Clone() (res Expr) {
-	return &Alist{Value: alist.Value, Name: alist.Name, Node: alist.Node}
+	return &Alist{Value: alist.Value, Name: alist.Name, Node: alist.Node, CtxName: alist.CtxName}
+}
+
+// ChangeContext -
+func (alist *Alist) ChangeContext(name string) {
+	alist.CtxName = name
+	for _, e := range alist.Value {
+		e.ChangeContext(name)
+	}
 }
 
 // Llist -
 type Llist struct {
 	Expr
-	Node  parsec.ParsecNode
-	Name  string
-	Value []Expr
+	Node    parsec.ParsecNode
+	Name    string
+	Value   []Expr
+	CtxName string
 }
 
 func (llist *Llist) String() (res string) {
@@ -245,7 +280,7 @@ func (llist *Llist) Eval() (res Expr) {
 	if len(llist.Value) == 0 {
 		return nullID
 	}
-	return applyFunc(llist.Value[0].Eval(), llist.Value[1:])
+	return applyFunc(llist.CtxName, llist.Value[0].Eval(), llist.Value[1:])
 }
 
 // Equals -
@@ -265,15 +300,24 @@ func (llist *Llist) Equals(e Expr) (res bool) {
 
 // Clone -
 func (llist *Llist) Clone() (res Expr) {
-	return &Llist{Value: llist.Value, Name: llist.Name, Node: llist.Node}
+	return &Llist{Value: llist.Value, Name: llist.Name, Node: llist.Node, CtxName: llist.CtxName}
+}
+
+// ChangeContext -
+func (llist *Llist) ChangeContext(name string) {
+	llist.CtxName = name
+	for _, e := range llist.Value {
+		e.ChangeContext(name)
+	}
 }
 
 // Mlist -
 type Mlist struct {
 	Expr
-	Node  parsec.ParsecNode
-	Name  string
-	Value []Expr
+	Node    parsec.ParsecNode
+	Name    string
+	Value   []Expr
+	CtxName string
 }
 
 func (mlist *Mlist) String() (res string) {
@@ -314,16 +358,25 @@ func (mlist *Mlist) Equals(e Expr) (res bool) {
 
 // Clone -
 func (mlist *Mlist) Clone() (res Expr) {
-	return &Llist{Value: mlist.Value, Name: mlist.Name, Node: mlist.Node}
+	return &Llist{Value: mlist.Value, Name: mlist.Name, Node: mlist.Node, CtxName: mlist.CtxName}
+}
+
+// ChangeContext -
+func (mlist *Mlist) ChangeContext(name string) {
+	mlist.CtxName = name
+	for _, e := range mlist.Value {
+		e.ChangeContext(name)
+	}
 }
 
 // Prop -
 type Prop struct {
 	Expr
-	Node  parsec.ParsecNode
-	Name  string
-	Key   string
-	Value Expr
+	Node    parsec.ParsecNode
+	Name    string
+	Key     string
+	Value   Expr
+	CtxName string
 }
 
 func (prop *Prop) String() (res string) {
@@ -338,9 +391,10 @@ func (prop *Prop) Debug() (res string) {
 // Dict -
 type Dict struct {
 	Expr
-	Node  parsec.ParsecNode
-	Name  string
-	Value map[string]Expr
+	Node    parsec.ParsecNode
+	Name    string
+	Value   map[string]Expr
+	CtxName string
 }
 
 func (dict *Dict) String() (res string) {
@@ -370,7 +424,7 @@ func (dict *Dict) Eval() (res Expr) {
 	for key, item := range dict.Value {
 		d[key] = item.Eval()
 	}
-	return &Dict{Node: dict.Node, Name: dict.Name, Value: d}
+	return &Dict{Node: dict.Node, Name: dict.Name, Value: d, CtxName: dict.CtxName}
 }
 
 // Equals -
@@ -391,15 +445,24 @@ func (dict *Dict) Equals(e Expr) (res bool) {
 
 // Clone -
 func (dict *Dict) Clone() (res Expr) {
-	return &Dict{Value: dict.Value, Name: dict.Name, Node: dict.Node}
+	return &Dict{Value: dict.Value, Name: dict.Name, Node: dict.Node, CtxName: dict.CtxName}
+}
+
+// ChangeContext -
+func (dict *Dict) ChangeContext(name string) {
+	dict.CtxName = name
+	for _, e := range dict.Value {
+		e.ChangeContext(name)
+	}
 }
 
 // Text -
 type Text struct {
 	Expr
-	Node  parsec.ParsecNode
-	Name  string
-	Value string
+	Node    parsec.ParsecNode
+	Name    string
+	Value   string
+	CtxName string
 }
 
 func (text *Text) String() (res string) {
@@ -428,12 +491,18 @@ func (text *Text) Clone() (res Expr) {
 	return &Text{Value: text.Value, Name: text.Name, Node: text.Node}
 }
 
+// ChangeContext -
+func (text *Text) ChangeContext(name string) {
+	text.CtxName = name
+}
+
 // Lamb -
 type Lamb struct {
 	Expr
-	Name   string
-	Params []*ID
-	Body   Expr
+	Name    string
+	Params  []*ID
+	Body    Expr
+	CtxName string
 }
 
 func (lamb *Lamb) String() (res string) {
@@ -459,14 +528,20 @@ func (lamb *Lamb) Equals(e Expr) (res bool) {
 
 // Clone -
 func (lamb *Lamb) Clone() (res Expr) {
-	return &Lamb{Params: lamb.Params, Body: lamb.Body, Name: lamb.Name}
+	return &Lamb{Params: lamb.Params, Body: lamb.Body, Name: lamb.Name, CtxName: lamb.CtxName}
+}
+
+// ChangeContext -
+func (lamb *Lamb) ChangeContext(name string) {
+	lamb.CtxName = name
+	lamb.Body.ChangeContext(name)
 }
 
 //var lambLock sync.RWMutex
 
 // Apply -
-func (lamb *Lamb) Apply(args []Expr) (res Expr) {
-	//debug(lamb.Debug(), args)
+func (lamb *Lamb) Apply(args []Expr, ctxName string) (res Expr) {
+	engine.debug(lamb.Debug(), args, ctxName)
 	if len(lamb.Params) != len(args) {
 		return errID
 	}
@@ -474,17 +549,21 @@ func (lamb *Lamb) Apply(args []Expr) (res Expr) {
 	for i, item := range lamb.Params {
 		vars[item.Value] = args[i].Eval()
 	}
-	//debug("Lamb Apply", "locking...", lamb.Debug(), args)
+	//if ctxName != lamb.CtxName && ctxName == "main" {
+	//	ctxName = lamb.CtxName
+	//}
+	//engine.debug("Lamb Apply", "locking...", lamb.Debug(), args)
 	//lambLock.Lock()
-	//debug("Lamb Apply", "locked", lamb.Debug(), args)
-	current.push(vars)
+	//engine.debug("Lamb Apply", "locked", lamb.Debug(), args)
+	engine.current[ctxName].push(vars, ctxName)
 	res = lamb.Body.Eval()
-	current.pop()
+	engine.current[ctxName].pop(ctxName)
 	//lambLock.Unlock()
-	//debug("Lamb Apply", "Unlocked", lamb.Debug(), args)
+	//engine.debug("Lamb Apply", "Unlocked", lamb.Debug(), args)
 	return
 }
 
+/*
 // Comment -
 type Comment struct {
 	Expr
@@ -518,3 +597,4 @@ func (com *Comment) Equals(e Expr) (res bool) {
 func (com *Comment) Clone() (res Expr) {
 	return &Comment{Value: com.Value, Name: com.Name, Node: com.Node}
 }
+*/

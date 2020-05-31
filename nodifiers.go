@@ -14,40 +14,40 @@ func atomNode(ns []parsec.ParsecNode) parsec.ParsecNode {
 	}
 	switch n := ns[0].(type) {
 	case *parsec.Terminal:
-		//debug("atomNode", *n)
+		//engine.debug("atomNode", *n)
 		switch n.Name {
 		case "INT":
 			i, _ := strconv.Atoi(n.Value)
-			return &Int{Node: n, Value: i, Name: "Num"}
+			return &Int{Node: n, Value: i, Name: "Num", CtxName: "main"}
 		case "OCT":
 			i, _ := strconv.ParseInt(n.Value, 0, 0)
-			return &Int{Node: n, Value: int(i), Name: "Num"}
+			return &Int{Node: n, Value: int(i), Name: "Num", CtxName: "main"}
 		case "HEX":
 			i, err := strconv.ParseInt(n.Value, 0, 0)
 			if err != nil {
-				debug("atomNode", "HEX", err)
+				engine.debug("atomNode", "HEX", err)
 			}
-			return &Int{Node: n, Value: int(i), Name: "Num"}
+			return &Int{Node: n, Value: int(i), Name: "Num", CtxName: "main"}
 		case "FLOAT":
 			f, _ := strconv.ParseFloat(n.Value, 64)
-			return &Float{Node: n, Value: f, Name: "Num"}
+			return &Float{Node: n, Value: f, Name: "Num", CtxName: "main"}
 		case "IDENT":
-			return &ID{Node: n, Value: n.Value, Name: "ID"}
+			return &ID{Node: n, Value: n.Value, Name: "ID", CtxName: "main"}
 		case "OP":
-			return &ID{Node: n, Value: n.Value, Name: "ID"}
+			return &ID{Node: n, Value: n.Value, Name: "ID", CtxName: "main"}
 		}
 		return n
 	case []parsec.ParsecNode:
-		//debug("atomNode", n[0], n[1])
+		//engine.debug("atomNode", n[0], n[1])
 		return n
 	case map[string]interface{}:
 		return n
 	case string:
-		return &Text{Node: n, Value: strings.ReplaceAll(n, `"`, ""), Name: "Text"}
+		return &Text{Node: n, Value: strings.ReplaceAll(n, `"`, ""), Name: "Text", CtxName: "main"}
 	case *Refer:
 		return n
 	default:
-		debug("atomNode: unknown type", reflect.TypeOf(n).String())
+		engine.debug("atomNode: unknown type", reflect.TypeOf(n).String())
 	}
 	return nil
 }
@@ -56,16 +56,16 @@ func referNode(ns []parsec.ParsecNode) parsec.ParsecNode {
 	if ns == nil || len(ns) < 1 {
 		return nil
 	}
-	//debug("referNode", ns)
+	//engine.debug("referNode", ns)
 	id := nodeToExpr(ns[1]).String()
-	return &Refer{Node: ns[1], Value: id, Name: "Refer"}
+	return &Refer{Node: ns[1], Value: id, Name: "Refer", CtxName: "main"}
 }
 
 func alistNode(ns []parsec.ParsecNode) parsec.ParsecNode {
 	if ns == nil || len(ns) < 1 {
 		return nil
 	}
-	//debug("alistNode", ns)
+	//engine.debug("alistNode", ns)
 	ilist, ok := ns[1].([]parsec.ParsecNode)
 	if !ok {
 		return nil
@@ -74,14 +74,14 @@ func alistNode(ns []parsec.ParsecNode) parsec.ParsecNode {
 	for _, item := range ilist {
 		list = append(list, nodeToExpr(item))
 	}
-	return &Alist{Node: ns[1], Value: list, Name: "Alist"}
+	return &Alist{Node: ns[1], Value: list, Name: "Alist", CtxName: "main"}
 }
 
 func mlistNode(ns []parsec.ParsecNode) parsec.ParsecNode {
 	if ns == nil || len(ns) < 1 {
 		return nil
 	}
-	//debug("mlistNode", ns)
+	//engine.debug("mlistNode", ns)
 	ilist, ok := ns[1].([]parsec.ParsecNode)
 	if !ok {
 		return nil
@@ -90,14 +90,14 @@ func mlistNode(ns []parsec.ParsecNode) parsec.ParsecNode {
 	for _, item := range ilist {
 		list = append(list, nodeToExpr(item))
 	}
-	return &Mlist{Node: ns[1], Value: list, Name: "Mlist"}
+	return &Mlist{Node: ns[1], Value: list, Name: "Mlist", CtxName: "main"}
 }
 
 func llistNode(ns []parsec.ParsecNode) parsec.ParsecNode {
 	if ns == nil || len(ns) < 1 {
 		return nil
 	}
-	//debug("llistNode", ns)
+	//engine.debug("llistNode", ns)
 	ilist, ok := ns[1].([]parsec.ParsecNode)
 	if !ok {
 		return nil
@@ -106,24 +106,24 @@ func llistNode(ns []parsec.ParsecNode) parsec.ParsecNode {
 	for _, item := range ilist {
 		list = append(list, nodeToExpr(item))
 	}
-	return &Llist{Node: ns[1], Value: list, Name: "Llist"}
+	return &Llist{Node: ns[1], Value: list, Name: "Llist", CtxName: "main"}
 }
 
 func propNode(ns []parsec.ParsecNode) parsec.ParsecNode {
 	if ns == nil || len(ns) < 1 {
 		return nil
 	}
-	//debug("propNode", ns)
+	//engine.debug("propNode", ns)
 	key := nodeToExpr(ns[0]).String()
 	item := nodeToExpr(ns[2])
-	return &Prop{Node: ns[1], Key: key, Value: item, Name: "Prop"}
+	return &Prop{Node: ns[1], Key: key, Value: item, Name: "Prop", CtxName: "main"}
 }
 
 func dictNode(ns []parsec.ParsecNode) parsec.ParsecNode {
 	if ns == nil || len(ns) < 1 {
 		return nil
 	}
-	//debug("dictNode", ns)
+	//engine.debug("dictNode", ns)
 	ilist, ok := ns[1].([]parsec.ParsecNode)
 	if !ok {
 		return nil
@@ -133,17 +133,19 @@ func dictNode(ns []parsec.ParsecNode) parsec.ParsecNode {
 		prop := nodeToExpr(item).(*Prop)
 		m[prop.Key] = nodeToExpr(prop.Value)
 	}
-	return &Dict{Node: ns[1], Value: m, Name: "Dict"}
+	return &Dict{Node: ns[1], Value: m, Name: "Dict", CtxName: "main"}
 }
 
+/*
 func commentNode(ns []parsec.ParsecNode) parsec.ParsecNode {
 	if ns == nil || len(ns) < 1 {
 		return nil
 	}
 	comment := ns[1].(*parsec.Terminal)
-	//debug("commentNode", comment.Value)
+	//engine.debug("commentNode", comment.Value)
 	return &Comment{Node: ns[1], Value: comment.Value, Name: "Comment"}
 }
+*/
 
 func nodeToExpr(node parsec.ParsecNode) (res Expr) {
 	switch node.(type) {
@@ -167,33 +169,33 @@ func nodeToExpr(node parsec.ParsecNode) (res Expr) {
 		res = node.(*Dict)
 	case *Text:
 		res = node.(*Text)
-	case *Comment:
-		res = node.(*Comment)
+	//case *Comment:
+	//	res = node.(*Comment)
 	case []parsec.ParsecNode:
-		//debug("nodeToExpr: []parsec.ParsecNode:", node)
+		//engine.debug("nodeToExpr: []parsec.ParsecNode:", node)
 		nodes := node.([]parsec.ParsecNode)
 		if len(nodes) == 1 {
 			res = nodeToExpr(nodes[0])
 		} else {
-			debug("nodeToExpr: []parsec.ParsecNode: len > 1", node)
+			engine.debug("nodeToExpr: []parsec.ParsecNode: len > 1", node)
 		}
 	case *parsec.Terminal:
-		//debug("nodeToExpr: *parsec.Terminal", node)
+		//engine.debug("nodeToExpr: *parsec.Terminal", node)
 		n := node.(*parsec.Terminal)
 		switch n.Name {
 		case "INT":
 			i, _ := strconv.Atoi(n.Value)
-			res = &Int{Node: n, Value: i, Name: "Num"}
+			res = &Int{Node: n, Value: i, Name: "Num", CtxName: "main"}
 		case "FLOAT":
 			f, _ := strconv.ParseFloat(n.Value, 64)
-			res = &Float{Node: n, Value: f, Name: "Num"}
+			res = &Float{Node: n, Value: f, Name: "Num", CtxName: "main"}
 		case "IDENT":
-			res = &ID{Node: n, Value: n.Value, Name: "ID"}
+			res = &ID{Node: n, Value: n.Value, Name: "ID", CtxName: "main"}
 		case "OP":
-			res = &ID{Node: n, Value: n.Value, Name: "ID"}
+			res = &ID{Node: n, Value: n.Value, Name: "ID", CtxName: "main"}
 		}
 	default:
-		debug("nodeToExpr: unknown type", reflect.TypeOf(node))
+		engine.debug("nodeToExpr: unknown type", reflect.TypeOf(node))
 	}
 	return
 }
@@ -204,39 +206,39 @@ func debugNodes(nodes []parsec.ParsecNode, deep int) {
 		switch node.(type) {
 		case *parsec.Terminal:
 			v := node.(*parsec.Terminal)
-			debug(strings.Repeat(".", deep*2), v.Name, v.Value, v.Position, v.Attributes)
+			engine.debug(strings.Repeat(".", deep*2), v.Name, v.Value, v.Position, v.Attributes)
 		case *Int:
 			v := node.(*Int)
-			debug(strings.Repeat(".", deep*2), v.Debug())
+			engine.debug(strings.Repeat(".", deep*2), v.Debug())
 		case *Float:
 			v := node.(*Float)
-			debug(strings.Repeat(".", deep*2), v.Debug())
+			engine.debug(strings.Repeat(".", deep*2), v.Debug())
 		case *ID:
 			v := node.(*ID)
-			debug(strings.Repeat(".", deep*2), v.Debug())
+			engine.debug(strings.Repeat(".", deep*2), v.Debug())
 		case *Refer:
 			v := node.(*Refer)
-			debug(strings.Repeat(".", deep*2), v.Debug())
+			engine.debug(strings.Repeat(".", deep*2), v.Debug())
 		case *Alist:
 			v := node.(*Alist)
-			debug(strings.Repeat(".", deep*2), v.Debug())
+			engine.debug(strings.Repeat(".", deep*2), v.Debug())
 		case *Mlist:
 			v := node.(*Mlist)
-			debug(strings.Repeat(".", deep*2), v.Debug())
+			engine.debug(strings.Repeat(".", deep*2), v.Debug())
 		case *Llist:
 			v := node.(*Llist)
-			debug(strings.Repeat(".", deep*2), v.Debug())
+			engine.debug(strings.Repeat(".", deep*2), v.Debug())
 		case *Dict:
 			v := node.(*Dict)
-			debug(strings.Repeat(".", deep*2), v.Debug())
+			engine.debug(strings.Repeat(".", deep*2), v.Debug())
 		case *Text:
 			v := node.(*Text)
-			debug(strings.Repeat(".", deep*2), v.Debug())
+			engine.debug(strings.Repeat(".", deep*2), v.Debug())
 		case []parsec.ParsecNode:
 			v := node.([]parsec.ParsecNode)
 			debugNodes(v, deep+1)
 		default:
-			debug(reflect.TypeOf(node).String())
+			engine.debug(reflect.TypeOf(node).String())
 		}
 	}
 }

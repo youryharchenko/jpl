@@ -27,9 +27,9 @@ var (
 	undefID = &ID{Value: UNDEFINED, Name: "ID"}
 )
 
-func initFuncs() map[string]Func {
-	return mergeFuncs(funcs, coreFuncs, osFuncs, mathFuncs, backtrFuncs, actorFuncs)
-}
+//func initFuncs() map[string]Func {
+//	return mergeFuncs(funcs, coreFuncs, osFuncs, mathFuncs, backtrFuncs, actorFuncs)
+//}
 
 func mergeFuncs(fns map[string]Func, ext ...map[string]Func) map[string]Func {
 	if fns == nil {
@@ -43,64 +43,66 @@ func mergeFuncs(fns map[string]Func, ext ...map[string]Func) map[string]Func {
 	return fns
 }
 
-func applyFunc(fn Expr, args []Expr) Expr {
+func applyFunc(ctxName string, fn Expr, args []Expr) Expr {
 
 	switch fnExpr := fn.Eval().(type) {
 	case *ID:
 		name := fnExpr.Value
-		f, ok := funcs[name]
+		f, ok := engine.funcs[name]
 		if !ok {
 			return undefID
 		}
-		res := f(args)
-		//debug("applyFunc", fn.Debug(), args, res)
+		res := f(args, ctxName)
+		//engine.debug("applyFunc", fn.Debug(), args, res)
 		return res
 	case *Lamb:
-		res := fnExpr.Apply(args)
-		//debug("applyFunc", fn.Debug(), args, res)
+		res := fnExpr.Apply(args, ctxName)
+		//engine.debug("applyFunc", ctxName, fn.Debug(), args, res)
 		return res
 	}
-	debug("applyFunc", fn.Debug(), args, undefID)
+	engine.debug("applyFunc", fn.Debug(), args, undefID)
 	return undefID
 }
 
-var coreFuncs = map[string]Func{
-	"parse":  parse,
-	"print":  printExprs,
-	"quote":  quote,
-	"eval":   eval,
-	"set":    set,
-	"get":    get,
-	"put":    put,
-	"let":    let,
-	"do":     do,
-	"and":    and,
-	"or":     or,
-	"while":  while,
-	"for":    ffor,
-	"eq":     eq,
-	"is":     is,
-	"not":    not,
-	"if":     iff,
-	"func":   lambda,
-	"form":   form,
-	"bool":   toBool,
-	"map":    mapl,
-	"fold":   foldl,
-	"text":   text,
-	"concat": concat,
-	"join":   join,
-	"slice":  slice,
-	"len":    length,
-	"head":   head,
-	"tail":   tail,
-	"cons":   cons,
-	"merge":  merge,
-	//"foldl": foldl,
-	//"foldr": foldr,
+func coreFuncs() map[string]Func {
+	return map[string]Func{
+		"parse":  parse,
+		"print":  printExprs,
+		"quote":  quote,
+		"eval":   eval,
+		"set":    set,
+		"get":    get,
+		"put":    put,
+		"let":    let,
+		"do":     do,
+		"and":    and,
+		"or":     or,
+		"while":  while,
+		"for":    ffor,
+		"eq":     eq,
+		"is":     is,
+		"not":    not,
+		"if":     iff,
+		"func":   lambda,
+		"form":   form,
+		"bool":   toBool,
+		"map":    mapl,
+		"fold":   foldl,
+		"text":   text,
+		"concat": concat,
+		"join":   join,
+		"slice":  slice,
+		"len":    length,
+		"head":   head,
+		"tail":   tail,
+		"cons":   cons,
+		"merge":  merge,
+		//"foldl": foldl,
+		//"foldr": foldr,
+	}
 }
 
-func parse(args []Expr) Expr {
+func parse(args []Expr, ctxName string) Expr {
 	if len(args) == 0 {
 		return errID
 	}
@@ -110,25 +112,25 @@ func parse(args []Expr) Expr {
 		if !ok {
 			return errID
 		}
-		nodes := Parse([]byte(src.Value))
-		list = parseNodes(nodes, list)
+		nodes := engine.Parse([]byte(src.Value))
+		list = parseNodes(nodes, list, ctxName)
 	} else {
 		for _, arg := range args {
 			src, ok := arg.Eval().(*Text)
 			if !ok {
 				return errID
 			}
-			nodes := Parse([]byte(src.Value))
-			list = parseNodes(nodes, list)
+			nodes := engine.Parse([]byte(src.Value))
+			list = parseNodes(nodes, list, ctxName)
 		}
 	}
 	if len(list) == 1 {
 		return list[0]
 	}
-	return &Alist{Name: "Alist", Value: list}
+	return &Alist{Name: "Alist", Value: list, CtxName: ctxName}
 }
 
-func parseNodes(nodes []parsec.ParsecNode, list []Expr) []Expr {
+func parseNodes(nodes []parsec.ParsecNode, list []Expr, ctxName string) []Expr {
 	for _, node := range nodes {
 		switch node.(type) {
 		case []parsec.ParsecNode:
@@ -138,48 +140,48 @@ func parseNodes(nodes []parsec.ParsecNode, list []Expr) []Expr {
 				list = append(list, expr)
 			} else {
 				l := []Expr{}
-				l = parseNodes(v, l)
-				list = append(list, &Alist{Name: "Alist", Value: l})
+				l = parseNodes(v, l, ctxName)
+				list = append(list, &Alist{Name: "Alist", Value: l, CtxName: ctxName})
 			}
 		default:
 			expr := nodeToExpr(node)
 			list = append(list, expr)
 			//res := expr.Eval()
-			//debug("expr:", expr, "=>", res)
+			//engine.debug("expr:", expr, "=>", res)
 		}
 	}
 	return list
 }
 
-func printExprs(args []Expr) Expr {
+func printExprs(args []Expr, ctxName string) Expr {
 	for _, arg := range args {
 		log.Println(arg.Eval())
 	}
-	return &Int{Value: len(args), Name: "Num"}
+	return &Int{Value: len(args), Name: "Num", CtxName: ctxName}
 }
 
-func quote(args []Expr) Expr {
+func quote(args []Expr, ctxName string) Expr {
 	if len(args) == 0 {
 		return nullID
 	}
 	return args[0]
 }
 
-func eval(args []Expr) Expr {
+func eval(args []Expr, ctxName string) Expr {
 	if len(args) == 0 {
 		return nullID
 	}
 	return args[0].Eval().Eval()
 }
 
-func set(args []Expr) Expr {
+func set(args []Expr, ctxName string) Expr {
 	if len(args) != 2 {
 		return errID
 	}
-	return current.set(args[0].Eval().String(), args[1].Eval())
+	return engine.current[ctxName].set(args[0].Eval().String(), args[1].Eval())
 }
 
-func get(args []Expr) Expr {
+func get(args []Expr, ctxName string) Expr {
 	if len(args) != 2 {
 		return errID
 	}
@@ -198,7 +200,7 @@ func get(args []Expr) Expr {
 	return val
 }
 
-func put(args []Expr) Expr {
+func put(args []Expr, ctxName string) Expr {
 	if len(args) != 3 {
 		return errID
 	}
@@ -219,7 +221,7 @@ func put(args []Expr) Expr {
 	return res
 }
 
-func eq(args []Expr) Expr {
+func eq(args []Expr, ctxName string) Expr {
 	if len(args) != 2 {
 		return errID
 	}
@@ -229,14 +231,14 @@ func eq(args []Expr) Expr {
 	return falseID
 }
 
-func is(args []Expr) Expr {
+func is(args []Expr, ctxName string) Expr {
 	if len(args) != 2 {
 		return errID
 	}
-	return match(args[0], args[1].Eval())
+	return match(args[0], args[1].Eval(), ctxName)
 }
 
-func not(args []Expr) Expr {
+func not(args []Expr, ctxName string) Expr {
 	if len(args) != 1 {
 		return errID
 	}
@@ -249,7 +251,7 @@ func not(args []Expr) Expr {
 	return errID
 }
 
-func iff(args []Expr) Expr {
+func iff(args []Expr, ctxName string) Expr {
 	if len(args) < 2 || len(args) > 3 {
 		return errID
 	}
@@ -266,7 +268,7 @@ func iff(args []Expr) Expr {
 	return errID
 }
 
-func let(args []Expr) Expr {
+func let(args []Expr, ctxName string) Expr {
 	if len(args) < 1 {
 		return errID
 	}
@@ -275,14 +277,15 @@ func let(args []Expr) Expr {
 		return errID
 	}
 	var res Expr
-	current.push(d.Value)
-	do(args[1:])
-	res = current.dict()
-	current.pop()
+	//engine.debug("let", d.CtxName)
+	engine.current[ctxName].push(d.Value, ctxName)
+	do(args[1:], ctxName)
+	res = engine.current[ctxName].dict()
+	engine.current[ctxName].pop(ctxName)
 	return res
 }
 
-func ffor(args []Expr) Expr {
+func ffor(args []Expr, ctxName string) Expr {
 	if len(args) < 5 {
 		return errID
 	}
@@ -291,10 +294,10 @@ func ffor(args []Expr) Expr {
 		return errID
 	}
 	var res Expr
-	current.push(d.Value)
+	engine.current[ctxName].push(d.Value, ctxName)
 	res = nullID
 	for args[1].Eval(); args[2].Eval().Equals(trueID); args[3].Eval() {
-		res = do(args[4:])
+		res = do(args[4:], ctxName)
 		id, ok := res.(*ID)
 		if ok && id.Value == BREAK {
 			break
@@ -303,18 +306,18 @@ func ffor(args []Expr) Expr {
 			continue
 		}
 	}
-	res = current.dict()
-	current.pop()
+	res = engine.current[ctxName].dict()
+	engine.current[ctxName].pop(ctxName)
 	return res
 }
 
-func while(args []Expr) (res Expr) {
+func while(args []Expr, ctxName string) (res Expr) {
 	if len(args) < 2 {
 		return errID
 	}
 	res = nullID
 	for args[0].Eval().Equals(trueID) {
-		res = do(args[1:])
+		res = do(args[1:], ctxName)
 		id, ok := res.(*ID)
 		if ok && id.Value == BREAK {
 			break
@@ -326,7 +329,7 @@ func while(args []Expr) (res Expr) {
 	return res
 }
 
-func do(args []Expr) Expr {
+func do(args []Expr, ctxName string) Expr {
 	var res Expr = nullID
 	for _, item := range args {
 		res = item.Eval()
@@ -341,7 +344,7 @@ func do(args []Expr) Expr {
 	return res
 }
 
-func and(args []Expr) Expr {
+func and(args []Expr, ctxName string) Expr {
 	var res Expr = nullID
 	for _, item := range args {
 		res = item.Eval()
@@ -351,13 +354,15 @@ func and(args []Expr) Expr {
 			break
 		}
 		if id.Equals(falseID) {
+			//engine.debug(res, item, ctxName)
 			break
 		}
 	}
+
 	return res
 }
 
-func or(args []Expr) Expr {
+func or(args []Expr, ctxName string) Expr {
 	var res Expr = nullID
 	for _, item := range args {
 		res = item.Eval()
@@ -373,7 +378,7 @@ func or(args []Expr) Expr {
 	return res
 }
 
-func lambda(args []Expr) Expr {
+func lambda(args []Expr, ctxName string) Expr {
 	if len(args) != 2 {
 		return errID
 	}
@@ -390,10 +395,10 @@ func lambda(args []Expr) Expr {
 		params = append(params, param)
 	}
 	body := args[1]
-	return &Lamb{Params: params, Body: body, Name: "Lambda"}
+	return &Lamb{Params: params, Body: body, Name: "Lambda", CtxName: ctxName}
 }
 
-func form(args []Expr) Expr {
+func form(args []Expr, ctxName string) Expr {
 	if len(args) != 1 {
 		return errID
 	}
@@ -404,20 +409,20 @@ func form(args []Expr) Expr {
 		for _, item := range e.Value {
 			list = append(list, item.Eval())
 		}
-		res = &Llist{Name: e.Name, Node: e.Node, Value: list}
+		res = &Llist{Name: e.Name, Node: e.Node, Value: list, CtxName: ctxName}
 	case *Mlist:
 		list := []Expr{}
 		for _, item := range e.Value {
 			list = append(list, item.Eval())
 		}
-		res = &Mlist{Name: e.Name, Node: e.Node, Value: list}
+		res = &Mlist{Name: e.Name, Node: e.Node, Value: list, CtxName: ctxName}
 	default:
 		res = e.Eval()
 	}
 	return res
 }
 
-func toBool(args []Expr) Expr {
+func toBool(args []Expr, ctxName string) Expr {
 	if len(args) != 1 {
 		return errID
 	}
@@ -448,37 +453,37 @@ func toBool(args []Expr) Expr {
 			res = falseID
 		}
 	case *Text:
-		//debug("toBool", "text", len(e.Value), e.Value)
+		//engine.debug("toBool", "text", len(e.Value), e.Value)
 		if len(e.Value) == 0 {
 			res = falseID
 		}
 	default:
-		debug("toBool", reflect.TypeOf(e))
+		engine.debug("toBool", reflect.TypeOf(e))
 	}
 	return res
 }
 
-func mapl(args []Expr) Expr {
-	//debug("map: args", args)
+func mapl(args []Expr, ctxName string) Expr {
+	//engine.debug("map: args", args)
 	if len(args) != 2 {
 		return errID
 	}
 	e := args[0].Eval()
 	alist, ok := e.(*Alist)
 	if !ok {
-		debug("map: error", e)
+		engine.debug("map: error", e)
 		return errID
 	}
-	//debug("map", alist.Debug())
+	//engine.debug("map", alist.Debug())
 	list := make([]Expr, len(alist.Value))
 	for i, item := range alist.Eval().(*Alist).Value {
 		//list = append(list, applyFunc(args[1].Eval(), []Expr{item}))
-		list[i] = applyFunc(args[1].Eval(), []Expr{item})
+		list[i] = applyFunc(alist.CtxName, args[1].Eval(), []Expr{item})
 	}
-	return &Alist{Node: alistNode, Name: alist.Name, Value: list}
+	return &Alist{Node: alistNode, Name: alist.Name, Value: list, CtxName: ctxName}
 }
 
-func foldl(args []Expr) Expr {
+func foldl(args []Expr, ctxName string) Expr {
 	if len(args) != 3 {
 		return errID
 	}
@@ -488,12 +493,12 @@ func foldl(args []Expr) Expr {
 	}
 	var res Expr = args[1].Eval()
 	for _, item := range alist.Eval().(*Alist).Value {
-		res = applyFunc(args[2].Eval(), []Expr{res, item})
+		res = applyFunc(alist.CtxName, args[2].Eval(), []Expr{res, item})
 	}
 	return res
 }
 
-func text(args []Expr) Expr {
+func text(args []Expr, ctxName string) Expr {
 	if len(args) != 1 {
 		return errID
 	}
@@ -501,27 +506,27 @@ func text(args []Expr) Expr {
 	case *Text:
 		return v.Clone()
 	default:
-		return &Text{Name: "Text", Value: v.String()}
+		return &Text{Name: "Text", Value: v.String(), CtxName: ctxName}
 	}
 }
 
-func concat(args []Expr) Expr {
+func concat(args []Expr, ctxName string) Expr {
 	sb := strings.Builder{}
 	for _, arg := range args {
-		//debug(arg.Eval())
+		//engine.debug(arg.Eval())
 		s, ok := arg.Eval().(*Text)
 		if !ok {
 			return errID
 		}
 		sb.WriteString(s.Value)
 	}
-	return &Text{Name: "Text", Value: sb.String()}
+	return &Text{Name: "Text", Value: sb.String(), CtxName: ctxName}
 }
 
-func join(args []Expr) Expr {
+func join(args []Expr, ctxName string) Expr {
 	list := []Expr{}
 	for _, arg := range args {
-		//debug(arg.Eval())
+		//engine.debug(arg.Eval())
 		a, ok := arg.Eval().(*Alist)
 		if !ok {
 			return errID
@@ -530,10 +535,10 @@ func join(args []Expr) Expr {
 			list = append(list, item)
 		}
 	}
-	return &Alist{Name: "Alist", Value: list}
+	return &Alist{Name: "Alist", Value: list, CtxName: ctxName}
 }
 
-func slice(args []Expr) Expr {
+func slice(args []Expr, ctxName string) Expr {
 	if len(args) < 2 {
 		return errID
 	}
@@ -557,10 +562,10 @@ func slice(args []Expr) Expr {
 	if beg > end {
 		return errID
 	}
-	return &Alist{Name: "Alist", Value: list.Value[beg:end]}
+	return &Alist{Name: "Alist", Value: list.Value[beg:end], CtxName: ctxName}
 }
 
-func length(args []Expr) Expr {
+func length(args []Expr, ctxName string) Expr {
 	if len(args) != 1 {
 		return errID
 	}
@@ -568,10 +573,10 @@ func length(args []Expr) Expr {
 	if !ok {
 		return errID
 	}
-	return &Int{Name: "Int", Value: len(list.Value)}
+	return &Int{Name: "Int", Value: len(list.Value), CtxName: ctxName}
 }
 
-func head(args []Expr) Expr {
+func head(args []Expr, ctxName string) Expr {
 	if len(args) != 1 {
 		return errID
 	}
@@ -585,7 +590,7 @@ func head(args []Expr) Expr {
 	return list.Value[0]
 }
 
-func tail(args []Expr) Expr {
+func tail(args []Expr, ctxName string) Expr {
 	if len(args) != 1 {
 		return errID
 	}
@@ -596,10 +601,10 @@ func tail(args []Expr) Expr {
 	if len(list.Value) < 1 {
 		return errID
 	}
-	return &Alist{Name: "Alist", Value: list.Value[1:]}
+	return &Alist{Name: "Alist", Value: list.Value[1:], CtxName: ctxName}
 }
 
-func cons(args []Expr) Expr {
+func cons(args []Expr, ctxName string) Expr {
 	if len(args) != 2 {
 		return errID
 	}
@@ -613,13 +618,13 @@ func cons(args []Expr) Expr {
 	for i, item := range list.Value {
 		nl[i+1] = item
 	}
-	return &Alist{Name: "Alist", Value: nl}
+	return &Alist{Name: "Alist", Value: nl, CtxName: ctxName}
 }
 
-func merge(args []Expr) Expr {
+func merge(args []Expr, ctxName string) Expr {
 	dict := map[string]Expr{}
 	for _, arg := range args {
-		//debug(arg.Eval())
+		//engine.debug(arg.Eval())
 		d, ok := arg.Eval().(*Dict)
 		if !ok {
 			return errID
@@ -628,5 +633,5 @@ func merge(args []Expr) Expr {
 			dict[key] = item
 		}
 	}
-	return &Dict{Name: "Dict", Value: dict}
+	return &Dict{Name: "Dict", Value: dict, CtxName: ctxName}
 }

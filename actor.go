@@ -19,16 +19,18 @@ var actorsLock = sync.RWMutex{}
 var waitGroup sync.WaitGroup
 var stopCh = make(chan struct{})
 
-var actorFuncs = map[string]Func{
-	"actor": actor,
-	"wait":  wait,
-	"send":  send,
-	"stop":  stopAll,
-	"sleep": sleep,
+func actorFuncs() map[string]Func {
+	return map[string]Func{
+		"actor": actor,
+		"wait":  wait,
+		"send":  send,
+		"stop":  stopAll,
+		"sleep": sleep,
+	}
 }
 
-func actor(args []Expr) Expr {
-	debug("actor", args)
+func actor(args []Expr, ctxName string) Expr {
+	engine.debug("actor", args)
 	if len(args) != 2 {
 		return errID
 	}
@@ -40,6 +42,8 @@ func actor(args []Expr) Expr {
 	if !ok {
 		return errID
 	}
+	engine.current[id.Value] = &Context{parent: engine.current["main"].clone(), vars: map[string]Expr{}}
+	handler.ChangeContext(id.Value)
 	actor := &Actor{id: id.Value, chBox: make(chan Expr, 0), handler: handler}
 	actorsLock.Lock()
 	actors[id.Value] = actor
@@ -47,7 +51,7 @@ func actor(args []Expr) Expr {
 	waitGroup.Add(1)
 	go func(actor *Actor) {
 		defer func() {
-			debug("actor", actor.id, "defer")
+			engine.debug("actor", actor.id, "defer")
 			waitGroup.Done()
 		}()
 		for {
@@ -56,23 +60,23 @@ func actor(args []Expr) Expr {
 				return
 			default:
 			}
-			debug("actor", actor.id, "waiting...")
+			engine.debug("actor", actor.id, "waiting...")
 			var e Expr
 			select {
 			case <-stopCh:
 				return
 			case e = <-actor.chBox:
-				debug("actor", actor.id, "apply handler", e)
-				res := applyFunc(actor.handler, []Expr{e})
+				engine.debug("actor", actor.id, "apply handler", e)
+				res := applyFunc(actor.id, actor.handler, []Expr{e})
 				//time.Sleep(time.Millisecond * 100)
-				debug("actor", actor.id, "result", res)
+				engine.debug("actor", actor.id, "result", res)
 			}
 		}
 	}(actor)
 	return trueID
 }
 
-func wait(args []Expr) Expr {
+func wait(args []Expr, ctxName string) Expr {
 	if len(args) != 0 {
 		return errID
 	}
@@ -80,7 +84,7 @@ func wait(args []Expr) Expr {
 	return nullID
 }
 
-func send(args []Expr) Expr {
+func send(args []Expr, ctxName string) Expr {
 	if len(args) != 3 {
 		return errID
 	}
@@ -99,17 +103,17 @@ func send(args []Expr) Expr {
 	if !ok {
 		return undefID
 	}
-	debug("send", idFrom.Value, "to", actor.id, "sending ...", e)
+	engine.debug("send", idFrom.Value, "to", actor.id, "sending ...", e)
 	select {
 	case <-stopCh:
-		debug("send", idFrom.Value, "to", actor.id, "aborted")
+		engine.debug("send", idFrom.Value, "to", actor.id, "aborted")
 	case actor.chBox <- e:
-		debug("sent", idFrom.Value, "to", actor.id, e)
+		engine.debug("sent", idFrom.Value, "to", actor.id, e)
 	}
 	return nullID
 }
 
-func stopAll(args []Expr) Expr {
+func stopAll(args []Expr, ctxName string) Expr {
 	if len(args) != 0 {
 		return errID
 	}
@@ -117,7 +121,7 @@ func stopAll(args []Expr) Expr {
 	return nullID
 }
 
-func sleep(args []Expr) Expr {
+func sleep(args []Expr, ctxName string) Expr {
 	if len(args) != 1 {
 		return errID
 	}

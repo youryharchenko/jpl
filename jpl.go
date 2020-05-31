@@ -3,71 +3,109 @@ package jpl
 import (
 	"bytes"
 	"log"
+	"sync"
 
 	parsec "github.com/prataprc/goparsec"
 )
 
-// Debug -
-var Debug = true
+var engine *JPL
 
-// Y - root Parser
-var Y parsec.Parser
+// JPL -
+type JPL struct {
+	Y     parsec.Parser
+	Debug bool
 
-// circular rats
-var value parsec.Parser
+	funcs   map[string]Func
+	matches map[string]Match
 
-var point = parsec.Atom(".", "POINT")
-var refer = parsec.And(referNode, point, parsec.Ident())
-var oper = parsec.OrdChoice(nil, parsec.Atom("+", "OP"), parsec.Atom("-", "OP"), parsec.Atom("*", "OP"), parsec.Atom("/", "OP"), parsec.Atom("%", "OP"))
-var atom = parsec.OrdChoice(atomNode, parsec.Ident(), parsec.Float(), parsec.Hex(), parsec.Oct(), parsec.Int(), parsec.String(), oper, refer)
-
-var openSqrt = parsec.Atom("[", "OPENSQRT")
-var closeSqrt = parsec.Atom("]", "CLOSESQRT")
-var alist = parsec.And(alistNode, openSqrt, values, closeSqrt)
-
-var openPar = parsec.Atom("(", "OPENPAR")
-var closePar = parsec.Atom(")", "CLOSEPAR")
-var llist = parsec.And(llistNode, openPar, values, closePar)
-
-var openAng = parsec.Atom("<", "OPENANG")
-var closeAng = parsec.Atom(">", "CLOSEANG")
-var mlist = parsec.And(mlistNode, openAng, values, closeAng)
-
-var colon = parsec.Atom(":", "COLON")
-var property = parsec.And(propNode, parsec.Ident(), colon, &value)
-var properties = parsec.Kleene(nil, property)
-
-var openBra = parsec.Atom("{", "OPENBRA")
-var closeBra = parsec.Atom("}", "CLOSEBRA")
-var dict = parsec.And(dictNode, openBra, properties, closeBra)
-
-var comment = parsec.And(commentNode, parsec.Atom("#", "HASH"), parsec.TokenExact("[^\n]*", "ALFA"), parsec.TokenExact("\n", "LF"))
-
-var values = parsec.Kleene(nil, &value)
-
-var funcs map[string]Func
-
-func init() {
-	funcs = initFuncs()
-
-	value = parsec.OrdChoice(nil, atom, alist, llist, mlist, dict, comment)
-	Y = parsec.OrdChoice(nil, values)
+	global   *Context
+	current  map[string]*Context
+	treeLock sync.RWMutex
 }
 
-func debug(args ...interface{}) {
-	if Debug {
+// New -
+func New() (jpl *JPL) {
+
+	jpl = &JPL{
+		global:  &Context{parent: nil, vars: map[string]Expr{}},
+		current: map[string]*Context{},
+	}
+	jpl.initParser()
+	jpl.initFuncs()
+	jpl.initMatches()
+	jpl.current["main"] = jpl.global
+
+	engine = jpl
+	return
+}
+
+func (jpl *JPL) initParser() {
+	var value parsec.Parser
+	var values = parsec.Kleene(nil, &value)
+
+	var point = parsec.Atom(".", "POINT")
+	var refer = parsec.And(referNode, point, parsec.Ident())
+	var oper = parsec.OrdChoice(nil, parsec.Atom("+", "OP"), parsec.Atom("-", "OP"), parsec.Atom("*", "OP"), parsec.Atom("/", "OP"), parsec.Atom("%", "OP"))
+	var atom = parsec.OrdChoice(atomNode, parsec.Ident(), parsec.Float(), parsec.Hex(), parsec.Oct(), parsec.Int(), parsec.String(), oper, refer)
+
+	var openSqrt = parsec.Atom("[", "OPENSQRT")
+	var closeSqrt = parsec.Atom("]", "CLOSESQRT")
+	var alist = parsec.And(alistNode, openSqrt, values, closeSqrt)
+
+	var openPar = parsec.Atom("(", "OPENPAR")
+	var closePar = parsec.Atom(")", "CLOSEPAR")
+	var llist = parsec.And(llistNode, openPar, values, closePar)
+
+	var openAng = parsec.Atom("<", "OPENANG")
+	var closeAng = parsec.Atom(">", "CLOSEANG")
+	var mlist = parsec.And(mlistNode, openAng, values, closeAng)
+
+	var colon = parsec.Atom(":", "COLON")
+	var property = parsec.And(propNode, parsec.Ident(), colon, &value)
+	var properties = parsec.Kleene(nil, property)
+
+	var openBra = parsec.Atom("{", "OPENBRA")
+	var closeBra = parsec.Atom("}", "CLOSEBRA")
+	var dict = parsec.And(dictNode, openBra, properties, closeBra)
+
+	value = parsec.OrdChoice(nil, atom, alist, llist, mlist, dict)
+
+	jpl.Y = parsec.OrdChoice(nil, values)
+}
+
+func (jpl *JPL) debug(args ...interface{}) {
+	if jpl.Debug {
 		log.Println(args...)
 	}
 }
+func (jpl *JPL) initFuncs(args ...interface{}) {
+	jpl.funcs = mergeFuncs(jpl.funcs, coreFuncs(), osFuncs(), mathFuncs(), backtrFuncs(), actorFuncs())
+}
 
 // Parse -
-func Parse(src []byte) []parsec.ParsecNode {
-	s := parsec.NewScanner(skipComments(src))
-	v, _ := Y(s)
+func (jpl *JPL) Parse(src []byte) []parsec.ParsecNode {
+	s := parsec.NewScanner(jpl.skipComments(src))
+	v, _ := jpl.Y(s)
 	return v.([]parsec.ParsecNode)
 }
 
-func skipComments(src []byte) []byte {
+// EvalNodes -
+func (jpl *JPL) EvalNodes(nodes []parsec.ParsecNode) {
+	for _, node := range nodes {
+		//engine.debug("evalNodes", node)
+		switch node.(type) {
+		case []parsec.ParsecNode:
+			v := node.([]parsec.ParsecNode)
+			jpl.EvalNodes(v)
+		default:
+			expr := nodeToExpr(node)
+			res := expr.Eval()
+			engine.debug("expr:", expr, "=>", res)
+		}
+	}
+}
+
+func (jpl *JPL) skipComments(src []byte) []byte {
 	buf := bytes.Buffer{}
 	skip := false
 	for _, i := range src {

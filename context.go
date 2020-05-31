@@ -1,43 +1,44 @@
 package jpl
 
-import (
-	"sync"
+import "sync"
 
-	parsec "github.com/prataprc/goparsec"
-)
-
-var global = &Context{parent: nil, vars: map[string]Expr{}}
-var current = global
-var contextLock sync.RWMutex
+//var global = &Context{parent: nil, vars: map[string]Expr{}}
+//var current = global
+//var contextLock sync.RWMutex
 
 // Context -
 type Context struct {
-	parent *Context
-	vars   map[string]Expr
+	parent      *Context
+	vars        map[string]Expr
+	contextLock sync.RWMutex
 }
 
-func (ctx *Context) push(vars map[string]Expr) {
-	contextLock.Lock()
-	current = &Context{parent: current, vars: vars}
-	contextLock.Unlock()
+func (ctx *Context) push(vars map[string]Expr, ctxName string) {
+	engine.treeLock.Lock()
+	engine.current[ctxName] = &Context{parent: engine.current[ctxName], vars: vars}
+	engine.treeLock.Unlock()
 }
 
-func (ctx *Context) pop() {
-	contextLock.Lock()
-	current = current.parent
-	contextLock.Unlock()
+func (ctx *Context) pop(ctxName string) {
+	engine.treeLock.Lock()
+	engine.current[ctxName] = engine.current[ctxName].parent
+	engine.treeLock.Unlock()
 }
 
 func (ctx *Context) set(id string, val Expr) Expr {
-	contextLock.Lock()
-	defer contextLock.Unlock()
+	//engine.contextLock.Lock()
+	//defer engine.contextLock.Unlock()
 
 	c := ctx
 	for c.parent != nil {
+		c.contextLock.RLock()
 		old, ok := c.vars[id]
+		c.contextLock.RUnlock()
 		if ok {
+			c.contextLock.Lock()
 			c.vars[id] = val
-			//debug("set", val)
+			c.contextLock.Unlock()
+			//engine.debug("set", val)
 			if old == nil {
 				old = nullID
 			}
@@ -45,27 +46,34 @@ func (ctx *Context) set(id string, val Expr) Expr {
 		}
 		c = c.parent
 	}
+	c.contextLock.RLock()
 	old, ok := c.vars[id]
-
+	c.contextLock.RUnlock()
 	if !ok {
 		old = undefID
 	}
+	c.contextLock.Lock()
 	c.vars[id] = val
+	c.contextLock.Unlock()
 	return old
 }
 
 func (ctx *Context) get(id string) Expr {
-	contextLock.RLock()
-	defer contextLock.RUnlock()
+	//engine.contextLock.RLock()
+	//defer engine.contextLock.RUnlock()
 	c := ctx
 	for c.parent != nil {
+		c.contextLock.RLock()
 		val, ok := c.vars[id]
+		c.contextLock.RUnlock()
 		if ok {
 			return val
 		}
 		c = c.parent
 	}
+	c.contextLock.RLock()
 	val, ok := c.vars[id]
+	c.contextLock.RUnlock()
 	if ok {
 		return val
 	}
@@ -73,11 +81,13 @@ func (ctx *Context) get(id string) Expr {
 }
 
 func (ctx *Context) bound(id string) bool {
-	contextLock.RLock()
-	defer contextLock.RUnlock()
+	//engine.contextLock.RLock()
+	//defer engine.contextLock.RUnlock()
 	c := ctx
 	for c != nil {
+		c.contextLock.RLock()
 		_, ok := c.vars[id]
+		c.contextLock.RUnlock()
 		if ok {
 			return true
 		}
@@ -87,33 +97,17 @@ func (ctx *Context) bound(id string) bool {
 }
 
 func (ctx *Context) dict() Expr {
-	contextLock.RLock()
-	defer contextLock.RUnlock()
+	ctx.contextLock.RLock()
+	defer ctx.contextLock.RUnlock()
 	return &Dict{Value: ctx.vars, Name: "Dict"}
 }
 
 func (ctx *Context) clone() *Context {
-	contextLock.RLock()
-	defer contextLock.RUnlock()
+	ctx.contextLock.RLock()
+	defer ctx.contextLock.RUnlock()
 	vars := map[string]Expr{}
 	for key, item := range ctx.vars {
 		vars[key] = item.Clone()
 	}
 	return &Context{parent: ctx.parent, vars: vars}
-}
-
-// EvalNodes -
-func EvalNodes(nodes []parsec.ParsecNode) {
-	for _, node := range nodes {
-		//debug("evalNodes", node)
-		switch node.(type) {
-		case []parsec.ParsecNode:
-			v := node.([]parsec.ParsecNode)
-			EvalNodes(v)
-		default:
-			expr := nodeToExpr(node)
-			res := expr.Eval()
-			debug("expr:", expr, "=>", res)
-		}
-	}
 }
