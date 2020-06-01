@@ -1,0 +1,13 @@
+#!/usr/bin/jpl
+# Coins
+#
+
+(tview run
+    (tview app {
+        root:(tview box {
+            border:true
+            title:"Hello, world!"
+        })
+        mouse:true
+    })
+)

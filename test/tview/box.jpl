@@ -1,0 +1,13 @@
+#!/usr/bin/jpl
+# Coins
+#
+
+(tview run
+    (tview app {
+        root:(tview box {
+            border:true
+            title:"A [red]c[yellow]o[green]l[darkcyan]o[blue]r[darkmagenta]f[red]u[yellow]l[white] [black:red]c[:yellow]o[:green]l[:darkcyan]o[:blue]r[:darkmagenta]f[:red]u[:yellow]l[white:] [::bu]title"
+        })
+        mouse:true
+    })
+)

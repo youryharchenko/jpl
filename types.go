@@ -56,7 +56,7 @@ func (num *Int) Equals(e Expr) (res bool) {
 
 // Clone -
 func (num *Int) Clone() (res Expr) {
-	return &Int{Value: num.Value, Name: num.Name, Node: num.Node}
+	return &Int{Value: num.Value, Name: num.Name, Node: num.Node, CtxName: num.CtxName}
 }
 
 // ChangeContext -
@@ -100,7 +100,7 @@ func (num *Float) Equals(e Expr) (res bool) {
 
 // Clone -
 func (num *Float) Clone() (res Expr) {
-	return &Float{Value: num.Value, Name: num.Name, Node: num.Node}
+	return &Float{Value: num.Value, Name: num.Name, Node: num.Node, CtxName: num.CtxName}
 }
 
 // ChangeContext -
@@ -140,7 +140,7 @@ func (id *ID) Equals(e Expr) (res bool) {
 
 // Clone -
 func (id *ID) Clone() (res Expr) {
-	return &ID{Value: id.Value, Name: id.Name, Node: id.Node}
+	return &ID{Value: id.Value, Name: id.Name, Node: id.Node, CtxName: id.CtxName}
 }
 
 // ChangeContext -
@@ -488,7 +488,7 @@ func (text *Text) Equals(e Expr) (res bool) {
 
 // Clone -
 func (text *Text) Clone() (res Expr) {
-	return &Text{Value: text.Value, Name: text.Name, Node: text.Node}
+	return &Text{Value: text.Value, Name: text.Name, Node: text.Node, CtxName: text.CtxName}
 }
 
 // ChangeContext -
@@ -561,6 +561,48 @@ func (lamb *Lamb) Apply(args []Expr, ctxName string) (res Expr) {
 	//lambLock.Unlock()
 	//engine.debug("Lamb Apply", "Unlocked", lamb.Debug(), args)
 	return
+}
+
+// Any -
+type Any struct {
+	Expr
+	Value   interface{}
+	Name    string
+	CtxName string
+}
+
+func (any *Any) String() (res string) {
+	return fmt.Sprintf("%v", any.Value)
+}
+
+// Debug -
+func (any *Any) Debug() (res string) {
+	return fmt.Sprintf("%s:%d", any.Name, any.Value)
+}
+
+// Eval -
+func (any *Any) Eval() (res Expr) {
+	return any
+}
+
+// Equals -
+func (any *Any) Equals(e Expr) (res bool) {
+	v, ok := e.(*Any)
+	if !ok {
+		return false
+	}
+	res = ok && any.Value == v.Value
+	return
+}
+
+// Clone -
+func (any *Any) Clone() (res Expr) {
+	return &Any{Value: any.Value, Name: any.Name, CtxName: any.CtxName}
+}
+
+// ChangeContext -
+func (any *Any) ChangeContext(name string) {
+	any.CtxName = name
 }
 
 /*

@@ -1,8 +1,12 @@
 package jpl
 
 import (
+	"bytes"
 	"flag"
+	"io"
 	"io/ioutil"
+	"log"
+	"strings"
 	"testing"
 )
 
@@ -13,9 +17,20 @@ func TestAll(t *testing.T) {
 		return
 	}
 	flag.Parse()
+	var buf bytes.Buffer
+	wr := io.MultiWriter(&buf)
+	log.SetOutput(wr)
 	eng := New()
 	nodes := eng.Parse(file)
 	eng.EvalNodes(nodes)
+	r := strings.Split(buf.String(), " ")
+	if len(r) != 3 {
+		t.Error(r)
+		return
+	}
+	if strings.TrimSpace(r[2]) != "true" {
+		t.Error(r[2])
+	}
 }
 
 /*

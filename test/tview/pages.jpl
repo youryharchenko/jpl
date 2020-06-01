@@ -1,0 +1,22 @@
+#!/usr/bin/jpl
+# Coins
+#
+
+(tview run
+    (tview app {
+        mouse:true
+        root:(tview pages [
+            {
+                page:(tview modal {
+                    text:"This is Page one. Choose where to go next."
+                    buttons: ["Next" "Quit"]
+                    done:(func [index label] (print [.index .label]))
+                })
+                title:"Page one"
+                resize:false
+                visible:true
+            }
+        ])
+        mouse:true
+    })
+)

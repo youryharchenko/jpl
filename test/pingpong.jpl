@@ -9,7 +9,7 @@
                 (is {mess:.mess count:.count next:.next} .e)
                 (print [.count .mess])
                 (send ping .next {mess:ping count:(+ .count 1) next:ping})
-                (sleep 1)
+                #(sleep 1)
             )
         
     )
@@ -22,7 +22,7 @@
                 (is {mess:.mess count:.count next:.next} .e)
                 (print [.count .mess])
                 (send pong .next {mess:pong count:(+ .count 1) next:pong})
-                (sleep 1)
+                #(sleep 1)
             )
     )     
 )
