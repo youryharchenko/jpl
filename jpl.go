@@ -80,7 +80,7 @@ func (jpl *JPL) debug(args ...interface{}) {
 }
 func (jpl *JPL) initFuncs(args ...interface{}) {
 	jpl.funcs = mergeFuncs(jpl.funcs,
-		coreFuncs(), osFuncs(), mathFuncs(), backtrFuncs(), actorFuncs(), tviewFuncs())
+		coreFuncs(), osFuncs(), mathFuncs(), backtrFuncs(), actorFuncs())
 }
 
 // Parse -

@@ -1,22 +1,62 @@
 #!/usr/bin/jpl
-# Coins
+# TView Pages
 #
-
-(tview run
-    (tview app {
-        mouse:true
-        root:(tview pages [
+(let {app:null pages:null pageList:null done:null buttons:["Next" "Quit"] pageTo:["Page one" "Page two" "Page three"] page:null}
+    (set page (head .pageTo))
+    (set pageTo (join (tail .pageTo) [.page])) 
+    
+    (set done (func [index label] (do
+        (if (eq .index 0) (do 
+                (set page (head .pageTo)) 
+                (set pageTo (join (tail .pageTo) [.page])) 
+                (apply .pages switch .page)
+        ))
+        (if (eq .index 1) (apply .app stop))
+    )))
+    (set pageList 
+        [
             {
-                page:(tview modal {
+                page:(new TviewModal {
                     text:"This is Page one. Choose where to go next."
-                    buttons: ["Next" "Quit"]
-                    done:(func [index label] (print [.index .label]))
+                    buttons:.buttons
+                    done:.done
                 })
                 title:"Page one"
                 resize:false
                 visible:true
             }
-        ])
-        mouse:true
-    })
+            {
+                page:(new TviewModal {
+                    text:"This is Page two. Choose where to go next."
+                    buttons:["Next" "Quit"]
+                    done:.done
+                })
+                title:"Page two"
+                resize:false
+                visible:false
+            }
+            {
+                page:(new TviewModal {
+                    text:"This is Page three. Choose where to go next."
+                    buttons:["Next" "Quit"]
+                    done:.done
+                })
+                title:"Page three"
+                resize:false
+                visible:false
+            }
+        ]
+    )
+    (set pages (new TviewPages .pageList))
+    (set app
+        (new TviewApp {
+            mouse:true
+            root:.pages
+            mouse:true
+        }) 
+    )
+    (apply
+        .app
+        run
+    )
 )

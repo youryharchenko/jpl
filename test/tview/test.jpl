@@ -1,28 +1,5 @@
-(set box (tview box {
-    border:true
-    title:"A [red]c[yellow]o[green]l[darkcyan]o[blue]r[darkmagenta]f[red]u[yellow]l[white] [black:red]c[:yellow]o[:green]l[:darkcyan]o[:blue]r[:darkmagenta]f[:red]u[:yellow]l[white:] [::bu]title"
-}))
-.box
-(set app1 (tview app {
-    root:.box
-    mouse:true
-}))
-.app1
-#(tview run .app)
-{
-    text:"This is Page one. Choose where to go next."
-    buttons:["Next" "Quit"]
-    done:(func [index] (print [.index]))
-}
-{
-                text:""
-                buttons:[]
-                done:(func [idex label] (print [.index .label]))
-}
 
-(set modal (tview modal {
-                text:"This is Page one. Choose where to go next."
-                buttons:["Next" "Quit"]
-                done:(func [idnex label] (print [.index .label]))
-}))
-.modal
+(new TviewBox {
+            border:true
+            title:"Hello, world!"
+        })

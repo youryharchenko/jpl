@@ -97,9 +97,54 @@ func coreFuncs() map[string]Func {
 		"tail":   tail,
 		"cons":   cons,
 		"merge":  merge,
+		"new":    newAny,
+		"apply":  applyMethod,
 		//"foldl": foldl,
 		//"foldr": foldr,
 	}
+}
+
+func newAny(args []Expr, ctxName string) Expr {
+	if len(args) == 0 {
+		return errID
+	}
+	id, ok := args[0].Eval().(*ID)
+	if !ok {
+		return errID
+	}
+	cls, ok := anyClasses[id.Value]
+	if !ok {
+		return undefID
+	}
+	return cls.Constructor(cls, args, ctxName)
+}
+
+func applyMethod(args []Expr, ctxName string) Expr {
+	engine.debug("applyMethod", args)
+	if len(args) < 2 {
+		return errID
+	}
+	any, ok := args[0].Eval().(*Any)
+	if !ok {
+		engine.debug("applyMethod", "error expr to *Any:", args[0])
+		return errID
+	}
+	idMeth, ok := args[1].Eval().(*ID)
+	if !ok {
+		engine.debug("applyMethod", "error expr to *ID:", args[1])
+		return errID
+	}
+	cls, ok := anyClasses[any.Name]
+	if !ok {
+		engine.debug("applyMethod", "class undefined", any.Name)
+		return undefID
+	}
+	meth := cls.Methods[idMeth.Value]
+	if !ok {
+		engine.debug("applyMethod", "method undefined", idMeth.Value)
+		return undefID
+	}
+	return meth(any, args, ctxName)
 }
 
 func parse(args []Expr, ctxName string) Expr {

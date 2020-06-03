@@ -1,149 +1,152 @@
 package jpl
 
-import "github.com/rivo/tview"
+import (
+	"github.com/rivo/tview"
+)
 
-func tviewFuncs() map[string]Func {
-	return map[string]Func{
-		"tview": cmdTview,
+func makeTviewApp() AnyClass {
+	return AnyClass{
+		Name:        "TviewApp",
+		Constructor: newApp,
+		Methods: map[string]Method{
+			"run":  runApp,
+			"stop": stopApp,
+		},
+		Properties: map[string]Property{
+			"root": {
+				Name:    "root",
+				Adapter: anyToInterface,
+			},
+			"mouse": {
+				Name:    "mouse",
+				Adapter: idToBool,
+			},
+		},
 	}
 }
 
-func cmdTview(args []Expr, ctxName string) Expr {
-	if len(args) == 0 {
-		return errID
+func makeTviewBox() AnyClass {
+	return AnyClass{
+		Name:        "TviewBox",
+		Constructor: newBox,
+		Methods:     map[string]Method{},
+		Properties: map[string]Property{
+			"title": {
+				Name:    "title",
+				Adapter: textToString,
+			},
+			"border": {
+				Name:    "border",
+				Adapter: idToBool,
+			},
+		},
 	}
-	cmd, ok := args[0].Eval().(*ID)
-	if !ok {
-		return errID
-	}
-	switch cmd.Value {
-	case "app":
-		return newApp(args, ctxName)
-	case "run":
-		return runApp(args, ctxName)
-	case "box":
-		return newBox(args, ctxName)
-	case "modal":
-		return newModal(args, ctxName)
-	case "pages":
-		return newPages(args, ctxName)
-	}
-	return nullID
 }
 
-func newApp(args []Expr, ctxName string) Expr {
-	engine.debug("tview", "app", "new", args)
+func makeTviewPages() AnyClass {
+	return AnyClass{
+		Name:        "TviewPages",
+		Constructor: newPages,
+		Methods: map[string]Method{
+			"switch": switchToPage,
+		},
+		Properties: map[string]Property{
+			"resize": {
+				Name:    "resize",
+				Adapter: idToBool,
+			},
+			"visible": {
+				Name:    "visible",
+				Adapter: idToBool,
+			},
+			"title": {
+				Name:    "title",
+				Adapter: textToString,
+			},
+			"page": {
+				Name:    "page",
+				Adapter: anyToInterface,
+			},
+		},
+	}
+}
+
+func makeTviewModal() AnyClass {
+	return AnyClass{
+		Name:        "TviewModal",
+		Constructor: newModal,
+		Methods:     map[string]Method{},
+		Properties: map[string]Property{
+			"buttons": {
+				Name:    "buttons",
+				Adapter: alistToStrings,
+			},
+			"text": {
+				Name:    "text",
+				Adapter: textToString,
+			},
+			"done": {
+				Name:    "done",
+				Adapter: exprToExpr,
+			},
+		},
+	}
+}
+
+func newApp(cls AnyClass, args []Expr, ctxName string) Expr {
+	//engine.debug("tview", "app", "new", args)
 	if len(args) < 2 {
 		return errID
 	}
-	dict, ok := args[1].Eval().(*Dict)
-	if !ok {
+	props, err := cls.adaptDict(args[1].Eval())
+	if err != nil {
 		return errID
 	}
-	eroot, ok := dict.Value["root"]
-	if !ok {
-		return errID
-	}
-	root, ok := eroot.(*Any)
-	if !ok {
-		return errID
-	}
-	prim, ok := root.Value.(tview.Primitive)
-	if !ok {
-		return errID
-	}
-	emouse, ok := dict.Value["mouse"]
-	if !ok {
-		return errID
-	}
-	mouse, ok := emouse.(*ID)
-	if !ok {
-		return errID
-	}
+
 	app := tview.NewApplication()
-	app.SetRoot(prim, true)
-	app.EnableMouse(!mouse.Equals(falseID))
-	engine.debug("tview", "app", "new", app)
-	return &Any{Name: "TView.App", CtxName: ctxName, Value: app}
+	app.SetRoot(props["root"].(tview.Primitive), true)
+	app.EnableMouse(props["mouse"].(bool))
+	//engine.debug("tview", "app", "new", app)
+	return &Any{Name: "TviewApp", CtxName: ctxName, Value: app}
 }
 
-func newBox(args []Expr, ctxName string) Expr {
+func newBox(cls AnyClass, args []Expr, ctxName string) Expr {
 	if len(args) < 2 {
 		return errID
 	}
-	dict, ok := args[1].Eval().(*Dict)
-	if !ok {
-		return errID
-	}
-	eborder, ok := dict.Value["border"]
-	if !ok {
-		return errID
-	}
-	border, ok := eborder.(*ID)
-	if !ok {
-		return errID
-	}
-	etitle, ok := dict.Value["title"]
-	if !ok {
-		return errID
-	}
-	title, ok := etitle.(*Text)
-	if !ok {
+	props, err := cls.adaptDict(args[1].Eval())
+	if err != nil {
 		return errID
 	}
 	box := tview.NewBox()
-	box.SetBorder(!border.Equals(falseID))
-	box.SetTitle(title.Value)
-	return &Any{Name: "TView.Box", Value: box, CtxName: ctxName}
+	box.SetBorder(props["border"].(bool))
+	box.SetTitle(props["title"].(string))
+	return &Any{Name: "TviewBox", Value: box, CtxName: ctxName}
 }
 
-func newModal(args []Expr, ctxName string) Expr {
-	engine.debug("tview", "modal", "new", args)
+func newModal(cls AnyClass, args []Expr, ctxName string) Expr {
+	//engine.debug("tview", "modal", "new", args)
 	if len(args) < 2 {
 		return errID
 	}
-	dict, ok := args[1].Eval().(*Dict)
-	if !ok {
-		return errID
-	}
-	ebuttons, ok := dict.Value["buttons"]
-	if !ok {
-		return errID
-	}
-	lbuttons, ok := ebuttons.(*Alist)
-	if !ok {
-		return errID
-	}
-	buttons := make([]string, len(lbuttons.Value))
-	for i, button := range lbuttons.Value {
-		buttons[i] = button.String()
-	}
-	etext, ok := dict.Value["text"]
-	if !ok {
-		return errID
-	}
-	text, ok := etext.(*Text)
-	if !ok {
-		return errID
-	}
-	edone, ok := dict.Value["done"]
-	if !ok {
+	props, err := cls.adaptDict(args[1].Eval())
+	if err != nil {
 		return errID
 	}
 	modal := tview.NewModal()
-	modal.AddButtons(buttons)
-	modal.SetText(text.Value)
+	modal.AddButtons(props["buttons"].([]string))
+	modal.SetText(props["text"].(string))
 	modal.SetDoneFunc(func(index int, label string) {
-		applyFunc(ctxName, edone, []Expr{
+		applyFunc(ctxName, props["done"].(Expr), []Expr{
 			&Int{Name: "Num", Value: index, CtxName: ctxName},
 			&Text{Name: "Text", Value: label, CtxName: ctxName},
 		})
 	})
-	engine.debug("tview", "modal", "new", modal)
-	return &Any{Name: "TView.Modal", Value: modal, CtxName: ctxName}
+	//engine.debug("tview", "modal", "new", modal)
+	return &Any{Name: "TviewModal", Value: modal, CtxName: ctxName}
 }
 
-func newPages(args []Expr, ctxName string) Expr {
+func newPages(cls AnyClass, args []Expr, ctxName string) Expr {
 	if len(args) < 2 {
 		return errID
 	}
@@ -153,69 +156,62 @@ func newPages(args []Expr, ctxName string) Expr {
 	}
 	pages := tview.NewPages()
 	for _, item := range list.Value {
-		dict, ok := item.(*Dict)
-		if !ok {
-			return errID
-		}
-		epage, ok := dict.Value["page"]
-		if !ok {
-			return errID
-		}
-		page, ok := epage.(*Any)
-		if !ok {
-			return errID
-		}
-		prim, ok := page.Value.(tview.Primitive)
-		if !ok {
-			return errID
-		}
-		etitle, ok := dict.Value["title"]
-		if !ok {
-			return errID
-		}
-		title, ok := etitle.(*Text)
-		if !ok {
-			return errID
-		}
-		eresize, ok := dict.Value["resize"]
-		if !ok {
-			return errID
-		}
-		resize, ok := eresize.(*ID)
-		if !ok {
-			return errID
-		}
-		evisible, ok := dict.Value["visible"]
-		if !ok {
-			return errID
-		}
-		visible, ok := evisible.(*ID)
-		if !ok {
-			return errID
-		}
-		pages.AddPage(title.Value, prim, !resize.Equals(falseID), !visible.Equals(falseID))
-	}
 
-	return &Any{Name: "TView.Pages", Value: pages, CtxName: ctxName}
+		props, err := cls.adaptDict(item)
+		if err != nil {
+			return errID
+		}
+		pages.AddPage(props["title"].(string), props["page"].(tview.Primitive),
+			props["resize"].(bool), props["visible"].(bool))
+	}
+	return &Any{Name: "TviewPages", Value: pages, CtxName: ctxName}
 }
 
-func runApp(args []Expr, ctxName string) Expr {
-	engine.debug("tview", "app", "run", args)
+func runApp(any *Any, args []Expr, ctxName string) Expr {
+	//engine.debug("tview", "app", "run", args)
 	if len(args) < 2 {
 		return errID
 	}
-	eapp, ok := args[1].Eval().(*Any)
+	app, ok := any.Value.(*tview.Application)
 	if !ok {
 		return errID
 	}
-	app, ok := eapp.Value.(*tview.Application)
-	if !ok {
-		return errID
-	}
-	engine.debug("tview", "app", "run", app)
+	//engine.debug("tview", "app", "run", app)
 	err := app.Run()
 	if err != nil {
 		return errID
 	}
+	return nullID
+}
+
+func stopApp(any *Any, args []Expr, ctxName string) Expr {
+	//engine.debug("tview", "app", "run", args)
+	if len(args) < 2 {
+		return errID
+	}
+	app, ok := any.Value.(*tview.Application)
+	if !ok {
+		return errID
+	}
+	//engine.debug("tview", "app", "run", app)
+	app.Stop()
+	return nullID
+}
+
+func switchToPage(any *Any, args []Expr, ctxName string) Expr {
+	engine.debug("tview", "pages", "switch", any, args)
+	if len(args) < 3 {
+		return errID
+	}
+	pages, ok := any.Value.(*tview.Pages)
+	if !ok {
+		return errID
+	}
+	name, ok := args[2].Eval().(*Text)
+	if !ok {
+		return errID
+	}
+	engine.debug("tview", "pages", "switch", name, pages)
+	pages.SwitchToPage(name.Value)
 	return nullID
 }
