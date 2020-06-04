@@ -1,0 +1,32 @@
+
+(fromJSON (toJSON (fromJSON (toJSON 1))))
+
+(fromJSON (toJSON (fromJSON (toJSON "Hello"))))
+
+(toJSON [1 2 3])
+(fromJSON (toJSON [1 2 3]))
+
+(fromJSON (toJSON (fromJSON (toJSON [1 2 3]))))
+(fromJSON (toJSON (fromJSON (toJSON ["Hello" "world"]))))
+(fromJSON (toJSON (fromJSON (toJSON [[1 2 3] ["Hello" "world"] []]))))
+
+(toJSON true)
+(toJSON false)
+(toJSON null)
+(toJSON abc)
+(fromJSON (toJSON true))
+(fromJSON (toJSON false))
+(fromJSON (toJSON null))
+(fromJSON (toJSON abc))
+
+(fromJSON (toJSON (fromJSON (toJSON true))))
+(fromJSON (toJSON (fromJSON (toJSON false))))
+(fromJSON (toJSON (fromJSON (toJSON null))))
+
+(toJSON {})
+(toJSON {a:1 b:"text" c:null s:false e:[1 2 3]})
+(fromJSON (toJSON (fromJSON (toJSON {a:1 b:"text" c:null d:false e:[1 2 3] f:{x:0 y:0}}))))
+
+(fromJSON (toJSON (quote .a)))
+(fromJSON (toJSON (quote (+ 1 1))))
+(fromJSON (toJSON (func [i] (print .i))))

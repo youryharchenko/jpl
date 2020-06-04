@@ -262,6 +262,10 @@
         (eq (cons [1 2] 0) [0 1 2])
         (eq (cons [] 0) [0])
         (eq (fold (range 0 10) [] cons) [9 8 7 6 5 4 3 2 1 0])
+
+        (eq (fromJSON (toJSON (fromJSON (toJSON {a:1 b:"text" c:null d:false e:[1 2 3] f:{x:0 y:0}}))))
+            {a:1 b:"text" c:null d:false e:[1 2 3] f:{x:0 y:0}}
+        )
     
     ) # and
 ) # print

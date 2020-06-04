@@ -30,7 +30,7 @@ func host(args []Expr, ctxName string) Expr {
 	if err != nil {
 		return errID
 	}
-	return &Text{Name: "Text", Value: name}
+	return &Text{Name: "Text", Value: name, CtxName: ctxName}
 }
 
 func env(args []Expr, ctxName string) Expr {
@@ -57,7 +57,11 @@ func env(args []Expr, ctxName string) Expr {
 				key = e[0]
 				val = strings.Join(e[1:], "=")
 			}
-			list[i] = &Alist{Name: "Alist", Value: []Expr{&Text{Name: "Text", Value: key}, &Text{Name: "Text", Value: val}}}
+			list[i] = &Alist{Name: "Alist",
+				Value: []Expr{
+					&Text{Name: "Text", Value: key, CtxName: ctxName},
+					&Text{Name: "Text", Value: val, CtxName: ctxName},
+				}, CtxName: ctxName}
 		}
 		return &Alist{Name: "Alist", Value: list}
 	}
@@ -79,10 +83,10 @@ func flagArgs(args []Expr, ctxName string) Expr {
 	} else {
 		list = make([]Expr, len(a)-1)
 		for i, arg := range a[1:] {
-			list[i] = parse([]Expr{&Text{Name: "Text", Value: arg}}, ctxName)
+			list[i] = parse([]Expr{&Text{Name: "Text", Value: arg, CtxName: ctxName}}, ctxName)
 		}
 	}
-	return &Alist{Name: "Alist", Value: list}
+	return &Alist{Name: "Alist", Value: list, CtxName: ctxName}
 }
 
 func execArgs(args []Expr, ctxName string) Expr {
@@ -93,14 +97,14 @@ func execArgs(args []Expr, ctxName string) Expr {
 	for i, arg := range os.Args[2:] {
 		list[i] = &Text{Name: "Text", Value: arg}
 	}
-	return &Alist{Name: "Alist", Value: list}
+	return &Alist{Name: "Alist", Value: list, CtxName: ctxName}
 }
 
 func execPid(args []Expr, ctxName string) Expr {
 	if len(args) > 0 {
 		return errID
 	}
-	return &Int{Name: "Num", Value: os.Getpid()}
+	return &Int{Name: "Num", Value: os.Getpid(), CtxName: ctxName}
 }
 
 func pwd(args []Expr, ctxName string) Expr {
@@ -111,7 +115,7 @@ func pwd(args []Expr, ctxName string) Expr {
 	if err != nil {
 		return errID
 	}
-	return &Text{Name: "Text", Value: dir}
+	return &Text{Name: "Text", Value: dir, CtxName: ctxName}
 }
 
 func chdir(args []Expr, ctxName string) Expr {
@@ -130,7 +134,7 @@ func chdir(args []Expr, ctxName string) Expr {
 	if err != nil {
 		return errID
 	}
-	return &Text{Name: "Text", Value: wd}
+	return &Text{Name: "Text", Value: wd, CtxName: ctxName}
 }
 
 func setenv(args []Expr, ctxName string) Expr {
@@ -150,7 +154,7 @@ func setenv(args []Expr, ctxName string) Expr {
 	if err != nil {
 		return errID
 	}
-	return &Text{Name: "Text", Value: old}
+	return &Text{Name: "Text", Value: old, CtxName: ctxName}
 }
 
 func unsetenv(args []Expr, ctxName string) Expr {
@@ -166,7 +170,7 @@ func unsetenv(args []Expr, ctxName string) Expr {
 	if err != nil {
 		return errID
 	}
-	return &Text{Name: "Text", Value: old}
+	return &Text{Name: "Text", Value: old, CtxName: ctxName}
 }
 
 func runCmd(args []Expr, ctxName string) Expr {
@@ -187,7 +191,7 @@ func runCmd(args []Expr, ctxName string) Expr {
 	res, err := cmd.CombinedOutput()
 	var errMess Expr
 	if err != nil {
-		errMess = &Text{Name: "Text", Value: err.Error()}
+		errMess = &Text{Name: "Text", Value: err.Error(), CtxName: ctxName}
 	} else {
 		errMess = nullID
 	}
@@ -196,11 +200,11 @@ func runCmd(args []Expr, ctxName string) Expr {
 		outLines := strings.Split(string(res), "\n")
 		lines = make([]Expr, len(outLines))
 		for i, line := range outLines {
-			lines[i] = &Text{Name: "Text", Value: line}
+			lines[i] = &Text{Name: "Text", Value: line, CtxName: ctxName}
 		}
 	}
 	return &Dict{Name: "Dict", Value: map[string]Expr{
 		"error": errMess,
-		"out":   &Alist{Name: "Alist", Value: lines},
+		"out":   &Alist{Name: "Alist", Value: lines, CtxName: ctxName},
 	}}
 }

@@ -1,6 +1,7 @@
 package jpl
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 
@@ -23,6 +24,8 @@ type Expr interface {
 // Int -
 type Int struct {
 	Expr
+	json.Marshaler
+	json.Unmarshaler
 	Node    parsec.ParsecNode
 	Name    string
 	Value   int
@@ -64,9 +67,27 @@ func (num *Int) ChangeContext(name string) {
 	num.CtxName = name
 }
 
+// MarshalJSON -
+func (num *Int) MarshalJSON() ([]byte, error) {
+	return json.Marshal(num.Value)
+}
+
+// UnmarshalJSON -
+func (num *Int) UnmarshalJSON(j []byte) error {
+	var v int
+	err := json.Unmarshal(j, &v)
+	if err != nil {
+		return err
+	}
+	num.Value = v
+	return nil
+}
+
 // Float -
 type Float struct {
 	Expr
+	json.Marshaler
+	json.Unmarshaler
 	Node    parsec.ParsecNode
 	Name    string
 	Value   float64
@@ -108,9 +129,27 @@ func (num *Float) ChangeContext(name string) {
 	num.CtxName = name
 }
 
+// MarshalJSON -
+func (num *Float) MarshalJSON() ([]byte, error) {
+	return json.Marshal(num.Value)
+}
+
+// UnmarshalJSON -
+func (num *Float) UnmarshalJSON(j []byte) error {
+	var v float64
+	err := json.Unmarshal(j, &v)
+	if err != nil {
+		return err
+	}
+	num.Value = v
+	return nil
+}
+
 // ID -
 type ID struct {
 	Expr
+	json.Marshaler
+	json.Unmarshaler
 	Node    parsec.ParsecNode
 	Name    string
 	Value   string
@@ -148,9 +187,37 @@ func (id *ID) ChangeContext(name string) {
 	id.CtxName = name
 }
 
+// MarshalJSON -
+func (id *ID) MarshalJSON() ([]byte, error) {
+	if id.Equals(trueID) {
+		return json.Marshal(true)
+	} else if id.Equals(falseID) {
+		return json.Marshal(false)
+	} else if id.Equals(nullID) {
+		return json.Marshal(nil)
+	}
+	return json.Marshal("undefined")
+}
+
+// UnmarshalJSON -
+func (id *ID) UnmarshalJSON(j []byte) error {
+	var v bool
+	err := json.Unmarshal(j, &v)
+	if err != nil {
+		return err
+	}
+	if v {
+		id.Value = "true"
+	} else {
+		id.Value = "false"
+	}
+	return nil
+}
+
 // Refer -
 type Refer struct {
 	Expr
+	json.Marshaler
 	Node    parsec.ParsecNode
 	Name    string
 	Value   string
@@ -188,9 +255,16 @@ func (ref *Refer) ChangeContext(name string) {
 	ref.CtxName = name
 }
 
+// MarshalJSON -
+func (ref *Refer) MarshalJSON() ([]byte, error) {
+	return json.Marshal(ref.String())
+}
+
 // Alist -
 type Alist struct {
 	Expr
+	json.Marshaler
+	json.Unmarshaler
 	Node    parsec.ParsecNode
 	Name    string
 	Value   []Expr
@@ -250,9 +324,29 @@ func (alist *Alist) ChangeContext(name string) {
 	}
 }
 
+// MarshalJSON -
+func (alist *Alist) MarshalJSON() ([]byte, error) {
+	return json.Marshal(alist.Value)
+}
+
+// UnmarshalJSON -
+func (alist *Alist) UnmarshalJSON(j []byte) error {
+	var v []interface{}
+	//engine.debug(alist, string(j))
+	err := json.Unmarshal(j, &v)
+	if err != nil {
+		engine.debug("Alist", "UnmarshalJSON", err)
+		return err
+	}
+	res := itemToExpr(v, alist.CtxName).(*Alist)
+	alist.Value = res.Value
+	return nil
+}
+
 // Llist -
 type Llist struct {
 	Expr
+	json.Marshaler
 	Node    parsec.ParsecNode
 	Name    string
 	Value   []Expr
@@ -311,9 +405,15 @@ func (llist *Llist) ChangeContext(name string) {
 	}
 }
 
+// MarshalJSON -
+func (llist *Llist) MarshalJSON() ([]byte, error) {
+	return json.Marshal(llist.String())
+}
+
 // Mlist -
 type Mlist struct {
 	Expr
+	json.Marshaler
 	Node    parsec.ParsecNode
 	Name    string
 	Value   []Expr
@@ -369,6 +469,11 @@ func (mlist *Mlist) ChangeContext(name string) {
 	}
 }
 
+// MarshalJSON -
+func (mlist *Mlist) MarshalJSON() ([]byte, error) {
+	return json.Marshal(mlist.String())
+}
+
 // Prop -
 type Prop struct {
 	Expr
@@ -391,6 +496,8 @@ func (prop *Prop) Debug() (res string) {
 // Dict -
 type Dict struct {
 	Expr
+	json.Marshaler
+	json.Unmarshaler
 	Node    parsec.ParsecNode
 	Name    string
 	Value   map[string]Expr
@@ -456,9 +563,30 @@ func (dict *Dict) ChangeContext(name string) {
 	}
 }
 
+// MarshalJSON -
+func (dict *Dict) MarshalJSON() ([]byte, error) {
+	return json.Marshal(dict.Value)
+}
+
+// UnmarshalJSON -
+func (dict *Dict) UnmarshalJSON(j []byte) error {
+	var v map[string]interface{}
+	//engine.debug(alist, string(j))
+	err := json.Unmarshal(j, &v)
+	if err != nil {
+		engine.debug("Dict", "UnmarshalJSON", err)
+		return err
+	}
+	res := itemToExpr(v, dict.CtxName).(*Dict)
+	dict.Value = res.Value
+	return nil
+}
+
 // Text -
 type Text struct {
 	Expr
+	json.Marshaler
+	json.Unmarshaler
 	Node    parsec.ParsecNode
 	Name    string
 	Value   string
@@ -496,9 +624,27 @@ func (text *Text) ChangeContext(name string) {
 	text.CtxName = name
 }
 
+// MarshalJSON -
+func (text *Text) MarshalJSON() ([]byte, error) {
+	return json.Marshal(text.Value)
+}
+
+// UnmarshalJSON -
+func (text *Text) UnmarshalJSON(j []byte) error {
+	var v string
+	engine.debug(string(j))
+	err := json.Unmarshal(j, &v)
+	if err != nil {
+		return err
+	}
+	text.Value = v
+	return nil
+}
+
 // Lamb -
 type Lamb struct {
 	Expr
+	json.Marshaler
 	Name    string
 	Params  []*ID
 	Body    Expr
@@ -537,6 +683,11 @@ func (lamb *Lamb) ChangeContext(name string) {
 	lamb.Body.ChangeContext(name)
 }
 
+// MarshalJSON -
+func (lamb *Lamb) MarshalJSON() ([]byte, error) {
+	return json.Marshal(lamb.String())
+}
+
 //var lambLock sync.RWMutex
 
 // Apply -
@@ -566,6 +717,7 @@ func (lamb *Lamb) Apply(args []Expr, ctxName string) (res Expr) {
 // Any -
 type Any struct {
 	Expr
+	json.Marshaler
 	Value   interface{}
 	Name    string
 	CtxName string
@@ -603,6 +755,11 @@ func (any *Any) Clone() (res Expr) {
 // ChangeContext -
 func (any *Any) ChangeContext(name string) {
 	any.CtxName = name
+}
+
+// MarshalJSON -
+func (any *Any) MarshalJSON() ([]byte, error) {
+	return json.Marshal(any.String())
 }
 
 /*
