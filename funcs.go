@@ -112,11 +112,14 @@ func newAny(args []Expr, ctxName string) Expr {
 	if !ok {
 		return errID
 	}
-	cls, ok := anyClasses[id.Value]
+	cls, ok := engine.anyClasses[id.Value]
 	if !ok {
 		return undefID
 	}
-	return cls.Constructor(cls, args, ctxName)
+	if cls.Constructor != nil {
+		return cls.Constructor(cls, args, ctxName)
+	}
+	return undefID
 }
 
 func applyMethod(args []Expr, ctxName string) Expr {
@@ -134,7 +137,7 @@ func applyMethod(args []Expr, ctxName string) Expr {
 		engine.debug("applyMethod", "error expr to *ID:", args[1])
 		return errID
 	}
-	cls, ok := anyClasses[any.Name]
+	cls, ok := engine.anyClasses[any.Name]
 	if !ok {
 		engine.debug("applyMethod", "class undefined", any.Name)
 		return undefID
@@ -223,7 +226,9 @@ func set(args []Expr, ctxName string) Expr {
 	if len(args) != 2 {
 		return errID
 	}
-	return engine.current[ctxName].set(args[0].Eval().String(), args[1].Eval())
+	c, _ := engine.current.Load(ctxName)
+	return c.(*Context).set(args[0].Eval().String(), args[1].Eval())
+	//return engine.current[ctxName].set(args[0].Eval().String(), args[1].Eval())
 }
 
 func get(args []Expr, ctxName string) Expr {
@@ -323,10 +328,16 @@ func let(args []Expr, ctxName string) Expr {
 	}
 	var res Expr
 	//engine.debug("let", d.CtxName)
-	engine.current[ctxName].push(d.Value, ctxName)
+	c, _ := engine.current.Load(ctxName)
+	c.(*Context).push(d.Value, ctxName)
+	//engine.current[ctxName].push(d.Value, ctxName)
 	do(args[1:], ctxName)
-	res = engine.current[ctxName].dict()
-	engine.current[ctxName].pop(ctxName)
+	c, _ = engine.current.Load(ctxName)
+	res = c.(*Context).dict()
+	//res = engine.current[ctxName].dict()
+	c, _ = engine.current.Load(ctxName)
+	c.(*Context).pop(ctxName)
+	//engine.current[ctxName].pop(ctxName)
 	return res
 }
 
@@ -339,7 +350,9 @@ func ffor(args []Expr, ctxName string) Expr {
 		return errID
 	}
 	var res Expr
-	engine.current[ctxName].push(d.Value, ctxName)
+	c, _ := engine.current.Load(ctxName)
+	c.(*Context).push(d.Value, ctxName)
+	//engine.current[ctxName].push(d.Value, ctxName)
 	res = nullID
 	for args[1].Eval(); args[2].Eval().Equals(trueID); args[3].Eval() {
 		res = do(args[4:], ctxName)
@@ -351,8 +364,12 @@ func ffor(args []Expr, ctxName string) Expr {
 			continue
 		}
 	}
-	res = engine.current[ctxName].dict()
-	engine.current[ctxName].pop(ctxName)
+	c, _ = engine.current.Load(ctxName)
+	res = c.(*Context).dict()
+	//res = engine.current[ctxName].dict()
+	c, _ = engine.current.Load(ctxName)
+	c.(*Context).pop(ctxName)
+	//engine.current[ctxName].pop(ctxName)
 	return res
 }
 
@@ -523,7 +540,8 @@ func mapl(args []Expr, ctxName string) Expr {
 	list := make([]Expr, len(alist.Value))
 	for i, item := range alist.Eval().(*Alist).Value {
 		//list = append(list, applyFunc(args[1].Eval(), []Expr{item}))
-		list[i] = applyFunc(alist.CtxName, args[1].Eval(), []Expr{item})
+		//list[i] = applyFunc(alist.CtxName, args[1].Eval(), []Expr{item})
+		list[i] = applyFunc(ctxName, args[1].Eval(), []Expr{item})
 	}
 	return &Alist{Node: alistNode, Name: alist.Name, Value: list, CtxName: ctxName}
 }
@@ -538,7 +556,8 @@ func foldl(args []Expr, ctxName string) Expr {
 	}
 	var res Expr = args[1].Eval()
 	for _, item := range alist.Eval().(*Alist).Value {
-		res = applyFunc(alist.CtxName, args[2].Eval(), []Expr{res, item})
+		//res = applyFunc(alist.CtxName, args[2].Eval(), []Expr{res, item})
+		res = applyFunc(ctxName, args[2].Eval(), []Expr{res, item})
 	}
 	return res
 }

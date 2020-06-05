@@ -19,8 +19,15 @@ type JPL struct {
 	matches map[string]Match
 
 	global   *Context
-	current  map[string]*Context
+	current  sync.Map //map[string]*Context
 	treeLock sync.RWMutex
+
+	actors     map[string]*Actor // = map[string]*Actor{}
+	actorsLock sync.RWMutex      //= sync.RWMutex{}
+	waitGroup  sync.WaitGroup
+	stopCh     chan struct{} //= make(chan struct{})
+
+	anyClasses map[string]AnyClass
 }
 
 // New -
@@ -28,12 +35,14 @@ func New() (jpl *JPL) {
 
 	jpl = &JPL{
 		global:  &Context{parent: nil, vars: map[string]Expr{}},
-		current: map[string]*Context{},
+		current: sync.Map{}, // map[string]*Context{},
 	}
 	jpl.initParser()
 	jpl.initFuncs()
 	jpl.initMatches()
-	jpl.current["main"] = jpl.global
+	jpl.initActors()
+	jpl.anyClasses = anyClasses()
+	jpl.current.Store("main", jpl.global) //jpl.current["main"] = jpl.global
 
 	engine = jpl
 	return
@@ -81,6 +90,11 @@ func (jpl *JPL) debug(args ...interface{}) {
 func (jpl *JPL) initFuncs(args ...interface{}) {
 	jpl.funcs = mergeFuncs(jpl.funcs,
 		coreFuncs(), osFuncs(), mathFuncs(), backtrFuncs(), actorFuncs(), jsonFuncs())
+}
+
+func (jpl *JPL) initActors(args ...interface{}) {
+	jpl.actors = map[string]*Actor{}
+	jpl.stopCh = make(chan struct{})
 }
 
 // Parse -

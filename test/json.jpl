@@ -30,3 +30,6 @@
 (fromJSON (toJSON (quote .a)))
 (fromJSON (toJSON (quote (+ 1 1))))
 (fromJSON (toJSON (func [i] (print .i))))
+
+(toJSON [1.0 2.0 3.0])
+(fromJSON (toJSON [1.0 2.0 3.0]))

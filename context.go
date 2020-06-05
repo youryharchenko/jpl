@@ -15,13 +15,18 @@ type Context struct {
 
 func (ctx *Context) push(vars map[string]Expr, ctxName string) {
 	engine.treeLock.Lock()
-	engine.current[ctxName] = &Context{parent: engine.current[ctxName], vars: vars}
+	c, _ := engine.current.Load(ctxName)
+	nc := &Context{parent: c.(*Context), vars: vars}
+	engine.current.Store(ctxName, nc)
+	//engine.current[ctxName] = &Context{parent: engine.current[ctxName], vars: vars}
 	engine.treeLock.Unlock()
 }
 
 func (ctx *Context) pop(ctxName string) {
 	engine.treeLock.Lock()
-	engine.current[ctxName] = engine.current[ctxName].parent
+	c, _ := engine.current.Load(ctxName)
+	engine.current.Store(ctxName, c.(*Context).parent)
+	//engine.current[ctxName] = engine.current[ctxName].parent
 	engine.treeLock.Unlock()
 }
 

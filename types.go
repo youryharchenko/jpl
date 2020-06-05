@@ -235,7 +235,9 @@ func (ref *Refer) Debug() (res string) {
 
 // Eval -
 func (ref *Refer) Eval() (res Expr) {
-	return engine.current[ref.CtxName].get(ref.Value)
+	c, _ := engine.current.Load(ref.CtxName)
+	return c.(*Context).get(ref.Value)
+	//return engine.current[ref.CtxName].get(ref.Value)
 }
 
 // Equals -
@@ -706,9 +708,14 @@ func (lamb *Lamb) Apply(args []Expr, ctxName string) (res Expr) {
 	//engine.debug("Lamb Apply", "locking...", lamb.Debug(), args)
 	//lambLock.Lock()
 	//engine.debug("Lamb Apply", "locked", lamb.Debug(), args)
-	engine.current[ctxName].push(vars, ctxName)
+	engine.debug("Lamb Apply", "ctxName:", ctxName)
+	c, _ := engine.current.Load(ctxName)
+	c.(*Context).push(vars, ctxName)
+	//engine.current[ctxName].push(vars, ctxName)
 	res = lamb.Body.Eval()
-	engine.current[ctxName].pop(ctxName)
+	c, _ = engine.current.Load(ctxName)
+	c.(*Context).pop(ctxName)
+	//engine.current[ctxName].pop(ctxName)
 	//lambLock.Unlock()
 	//engine.debug("Lamb Apply", "Unlocked", lamb.Debug(), args)
 	return

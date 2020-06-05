@@ -8,11 +8,15 @@ type Constructor func(cls AnyClass, args []Expr, ctxName string) Expr
 // Method -
 type Method func(any *Any, args []Expr, ctxName string) Expr
 
-var anyClasses = map[string]AnyClass{
-	"TviewApp":   makeTviewApp(),
-	"TviewBox":   makeTviewBox(),
-	"TviewPages": makeTviewPages(),
-	"TviewModal": makeTviewModal(),
+func anyClasses() map[string]AnyClass {
+	return map[string]AnyClass{
+		"TviewApp":    makeTviewApp(),
+		"TviewBox":    makeTviewBox(),
+		"TviewPages":  makeTviewPages(),
+		"TviewModal":  makeTviewModal(),
+		"HttpServer":  makeHTTPServer(),
+		"HttpRequest": makeHTTPRequest(),
+	}
 }
 
 // AnyClass -

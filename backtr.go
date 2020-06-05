@@ -33,7 +33,9 @@ func setu(args []Expr, ctxName string) Expr {
 		return errID
 	}
 	e := args[1].Eval()
-	var old = engine.current[ctxName].set(id.Value, e)
+	ctx, _ := engine.current.Load(ctxName)
+	var old = ctx.(*Context).set(id.Value, e)
+	//var old = engine.current[ctxName].set(id.Value, e)
 	lastFork.addUndo(&Llist{Name: "Llist", Value: []Expr{&ID{Name: "ID", Value: "set", CtxName: ctxName}, id, old}, CtxName: ctxName})
 	return old
 }
@@ -47,7 +49,9 @@ func among(args []Expr, ctxName string) Expr {
 	if !ok {
 		return errID
 	}
-	engine.current[ctxName].push(dict.Value, ctxName)
+	ctx, _ := engine.current.Load(ctxName)
+	ctx.(*Context).push(dict.Value, ctxName)
+	//engine.current[ctxName].push(dict.Value, ctxName)
 	v, ok := args[1].Eval().(*ID)
 	if !ok {
 		return errID
@@ -58,7 +62,9 @@ func among(args []Expr, ctxName string) Expr {
 	}
 	e := args[3]
 	res = runAmong(v.Value, alist.Value, e, ctxName)
-	engine.current[ctxName].pop(ctxName)
+	ctx, _ = engine.current.Load(ctxName)
+	ctx.(*Context).pop(ctxName)
+	//engine.current[ctxName].pop(ctxName)
 	return res
 }
 
@@ -73,7 +79,9 @@ func runAmong(v string, list []Expr, e Expr, ctxName string) Expr {
 
 	for _, item := range list {
 		val := item.Eval()
-		engine.current[ctxName].set(v, val)
+		ctx, _ := engine.current.Load(ctxName)
+		ctx.(*Context).set(v, val)
+		//engine.current[ctxName].set(v, val)
 		res = e.Eval()
 		id, ok := res.(*ID)
 		if ok && id.Equals(failID) {

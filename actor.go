@@ -1,10 +1,10 @@
 package jpl
 
 import (
-	"sync"
 	"time"
 )
 
+/*
 // Constants -
 const (
 	CLOSE = "close"
@@ -13,12 +13,13 @@ const (
 var (
 	closeID = &ID{Value: CLOSE, Name: "ID"}
 )
-
+*/
+/*
 var actors = map[string]*Actor{}
 var actorsLock = sync.RWMutex{}
 var waitGroup sync.WaitGroup
 var stopCh = make(chan struct{})
-
+*/
 func actorFuncs() map[string]Func {
 	return map[string]Func{
 		"actor": actor,
@@ -42,28 +43,30 @@ func actor(args []Expr, ctxName string) Expr {
 	if !ok {
 		return errID
 	}
-	engine.current[id.Value] = &Context{parent: engine.current["main"].clone(), vars: map[string]Expr{}}
+	//engine.current[id.Value] = &Context{parent: engine.current["main"].clone(), vars: map[string]Expr{}}
+	clon, _ := engine.current.Load("main") // engine.current["main"].clone()
+	engine.current.Store(id.Value, &Context{parent: clon.(*Context), vars: map[string]Expr{}})
 	handler.ChangeContext(id.Value)
 	actor := &Actor{id: id.Value, chBox: make(chan Expr, 0), handler: handler}
-	actorsLock.Lock()
-	actors[id.Value] = actor
-	actorsLock.Unlock()
-	waitGroup.Add(1)
+	engine.actorsLock.Lock()
+	engine.actors[id.Value] = actor
+	engine.actorsLock.Unlock()
+	engine.waitGroup.Add(1)
 	go func(actor *Actor) {
 		defer func() {
 			engine.debug("actor", actor.id, "defer")
-			waitGroup.Done()
+			engine.waitGroup.Done()
 		}()
 		for {
 			select {
-			case <-stopCh:
+			case <-engine.stopCh:
 				return
 			default:
 			}
 			engine.debug("actor", actor.id, "waiting...")
 			var e Expr
 			select {
-			case <-stopCh:
+			case <-engine.stopCh:
 				return
 			case e = <-actor.chBox:
 				engine.debug("actor", actor.id, "apply handler", e)
@@ -80,7 +83,7 @@ func wait(args []Expr, ctxName string) Expr {
 	if len(args) != 0 {
 		return errID
 	}
-	waitGroup.Wait()
+	engine.waitGroup.Wait()
 	return nullID
 }
 
@@ -97,15 +100,15 @@ func send(args []Expr, ctxName string) Expr {
 		return errID
 	}
 	e := args[2].Eval()
-	actorsLock.RLock()
-	actor, ok := actors[idTo.Value]
-	actorsLock.RUnlock()
+	engine.actorsLock.RLock()
+	actor, ok := engine.actors[idTo.Value]
+	engine.actorsLock.RUnlock()
 	if !ok {
 		return undefID
 	}
 	engine.debug("send", idFrom.Value, "to", actor.id, "sending ...", e)
 	select {
-	case <-stopCh:
+	case <-engine.stopCh:
 		engine.debug("send", idFrom.Value, "to", actor.id, "aborted")
 	case actor.chBox <- e:
 		engine.debug("sent", idFrom.Value, "to", actor.id, e)
@@ -117,7 +120,7 @@ func stopAll(args []Expr, ctxName string) Expr {
 	if len(args) != 0 {
 		return errID
 	}
-	close(stopCh)
+	close(engine.stopCh)
 	return nullID
 }
 

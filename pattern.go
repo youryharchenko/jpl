@@ -183,9 +183,14 @@ func (pat *Pattern) matchFloat(p *Float, e Expr) (res bool) {
 }
 
 func (pat *Pattern) matchRefer(p *Refer, e Expr) (res bool) {
-	if engine.current[pat.ctxName].bound(p.Value) {
-		if engine.current[pat.ctxName].get(p.Value).Equals(nullID) {
-			engine.current[pat.ctxName].set(p.Value, e)
+	c, _ := engine.current.Load(pat.ctxName)
+	ctx := c.(*Context)
+	if ctx.bound(p.Value) {
+		if ctx.get(p.Value).Equals(nullID) {
+			ctx.set(p.Value, e)
+			//if engine.current[pat.ctxName].bound(p.Value) {
+			//	if engine.current[pat.ctxName].get(p.Value).Equals(nullID) {
+			//		engine.current[pat.ctxName].set(p.Value, e)
 			return true
 		}
 		return p.Eval().Equals(e)
@@ -250,8 +255,9 @@ func (pat *Pattern) matchMlist(p *Mlist, e Expr) (res bool) {
 func (pat *Pattern) begin() {
 	engine.treeLock.RLock()
 	defer engine.treeLock.RUnlock()
-
-	pat.clon = engine.current[pat.ctxName].clone()
+	c, _ := engine.current.Load(pat.ctxName)
+	pat.clon = c.(*Context).clone()
+	//pat.clon = engine.current[pat.ctxName].clone()
 	cl := pat.clon
 	for cl.parent != nil {
 		cl.parent = cl.parent.clone()
@@ -266,5 +272,6 @@ func (pat *Pattern) commit() {
 func (pat *Pattern) rollback() {
 	engine.treeLock.Lock()
 	defer engine.treeLock.Unlock()
-	engine.current[pat.ctxName] = pat.clon
+	engine.current.Store(pat.ctxName, pat.clon)
+	//engine.current[pat.ctxName] = pat.clon
 }
