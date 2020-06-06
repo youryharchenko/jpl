@@ -266,6 +266,10 @@
         (eq (fromJSON (toJSON (fromJSON (toJSON {a:1 b:"text" c:null d:false e:[1 2 3] f:{x:0 y:0}}))))
             {a:1 b:"text" c:null d:false e:[1 2 3] f:{x:0 y:0}}
         )
+
+        (is <id> (id "abc"))
+        (is <id> (id 1))
+        (eq {"a":abc} {a:abc})
     
     ) # and
 ) # print

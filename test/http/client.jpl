@@ -1,0 +1,17 @@
+(set client (new HttpClient {}))
+# .client
+(set reqGET (new HttpRequest {
+    method:"GET"
+    url:"http://localhost:8080"
+}))
+
+(apply (apply .client do .reqGET) toDict)
+
+(set reqPOST (new HttpRequest {
+    method:"POST"
+    url:"http://localhost:8080"
+    body:(toJSON {a:1 b:"abc" c:null d:true e:[1 2 3] f:{x:0 y:0}})
+}))
+
+(apply (apply .client do .reqPOST) toDict)
+

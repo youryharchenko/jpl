@@ -66,29 +66,31 @@ func applyFunc(ctxName string, fn Expr, args []Expr) Expr {
 
 func coreFuncs() map[string]Func {
 	return map[string]Func{
-		"parse":  parse,
-		"print":  printExprs,
-		"quote":  quote,
-		"eval":   eval,
-		"set":    set,
-		"get":    get,
-		"put":    put,
-		"let":    let,
-		"do":     do,
-		"and":    and,
-		"or":     or,
-		"while":  while,
-		"for":    ffor,
-		"eq":     eq,
-		"is":     is,
-		"not":    not,
-		"if":     iff,
-		"func":   lambda,
+		"parse": parse,
+		"print": printExprs,
+		"quote": quote,
+		"eval":  eval,
+		"set":   set,
+		"get":   get,
+		"put":   put,
+		"let":   let,
+		"do":    do,
+		"and":   and,
+		"or":    or,
+		"while": while,
+		"for":   ffor,
+		"eq":    eq,
+		"is":    is,
+		"not":   not,
+		"if":    iff,
+		"func":  lambda,
+		//"curry":  curry,
 		"form":   form,
 		"bool":   toBool,
 		"map":    mapl,
 		"fold":   foldl,
 		"text":   text,
+		"id":     id,
 		"concat": concat,
 		"join":   join,
 		"slice":  slice,
@@ -142,7 +144,7 @@ func applyMethod(args []Expr, ctxName string) Expr {
 		engine.debug("applyMethod", "class undefined", any.Name)
 		return undefID
 	}
-	meth := cls.Methods[idMeth.Value]
+	meth, ok := cls.Methods[idMeth.Value]
 	if !ok {
 		engine.debug("applyMethod", "method undefined", idMeth.Value)
 		return undefID
@@ -460,6 +462,20 @@ func lambda(args []Expr, ctxName string) Expr {
 	return &Lamb{Params: params, Body: body, Name: "Lambda", CtxName: ctxName}
 }
 
+/*
+func curry(args []Expr, ctxName string) Expr {
+	if len(args) != 2 {
+		return errID
+	}
+	switch args[0].Eval().(type) {
+	case *ID:
+	default:
+		return errID
+	}
+	param := args[1].Eval()
+	return &Lamb{Params: params, Body: body, Name: "Lambda", CtxName: ctxName}
+}
+*/
 func form(args []Expr, ctxName string) Expr {
 	if len(args) != 1 {
 		return errID
@@ -571,6 +587,20 @@ func text(args []Expr, ctxName string) Expr {
 		return v.Clone()
 	default:
 		return &Text{Name: "Text", Value: v.String(), CtxName: ctxName}
+	}
+}
+
+func id(args []Expr, ctxName string) Expr {
+	if len(args) != 1 {
+		return errID
+	}
+	switch v := args[0].Eval().(type) {
+	case *ID:
+		return v.Clone()
+	case *Text:
+		return &ID{Name: "ID", Value: v.Value, CtxName: ctxName}
+	default:
+		return &ID{Name: "ID", Value: v.String(), CtxName: ctxName}
 	}
 }
 

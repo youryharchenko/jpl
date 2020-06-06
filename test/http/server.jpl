@@ -1,11 +1,22 @@
 (set handler 
     (func [request] 
-        (get (let {d:null body:null resp:null}
+        (get (let {d:null method:null body:null resp:null}
             (set d (apply .request toDict))
             (print [request .d])
-            (set body (fromJSON (get .d body)))
-            (print [body .body])
-            (set resp (toJSON .body))
+            (set method (get .d method))
+            (print [method .method])
+
+            (if (eq .method "GET")
+                (set resp "Hello, world!")
+            )
+            (if (eq .method "POST")
+                (do
+                    (set body (fromJSON (get .d body)))
+                    (print [body .body])
+                    (set resp (toJSON .body))
+                )
+            )
+
             (print [response .resp])
         ) resp)
     )

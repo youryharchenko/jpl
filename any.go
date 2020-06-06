@@ -10,12 +10,14 @@ type Method func(any *Any, args []Expr, ctxName string) Expr
 
 func anyClasses() map[string]AnyClass {
 	return map[string]AnyClass{
-		"TviewApp":    makeTviewApp(),
-		"TviewBox":    makeTviewBox(),
-		"TviewPages":  makeTviewPages(),
-		"TviewModal":  makeTviewModal(),
-		"HttpServer":  makeHTTPServer(),
-		"HttpRequest": makeHTTPRequest(),
+		"TviewApp":     makeTviewApp(),
+		"TviewBox":     makeTviewBox(),
+		"TviewPages":   makeTviewPages(),
+		"TviewModal":   makeTviewModal(),
+		"HttpServer":   makeHTTPServer(),
+		"HttpRequest":  makeHTTPRequest(),
+		"HttpClient":   makeHTTPClient(),
+		"HttpResponse": makeHTTPResponse(),
 	}
 }
 
@@ -118,4 +120,28 @@ func idToBool(dict *Dict, name string) interface{} {
 		return nil
 	}
 	return !id.Equals(falseID)
+}
+
+func dictToMap(dict *Dict, name string) interface{} {
+	e, ok := dict.Value[name]
+	if !ok {
+		return nil
+	}
+	d, ok := e.(*Dict)
+	if !ok {
+		return nil
+	}
+	m := map[string]string{}
+	for key, button := range d.Value {
+		//engine.debug(key)
+		switch t := button.(type) {
+		case *Text:
+			m[key] = t.Value
+		case *ID:
+			m[key] = t.Value
+		default:
+			m[key] = undefID.Value
+		}
+	}
+	return m
 }

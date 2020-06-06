@@ -70,7 +70,8 @@ func (jpl *JPL) initParser() {
 	var mlist = parsec.And(mlistNode, openAng, values, closeAng)
 
 	var colon = parsec.Atom(":", "COLON")
-	var property = parsec.And(propNode, parsec.Ident(), colon, &value)
+	//var property = parsec.And(propNode, parsec.Ident(), colon, &value)
+	var property = parsec.And(propNode, parsec.OrdChoice(nil, parsec.Ident(), parsec.String()), colon, &value)
 	var properties = parsec.Kleene(nil, property)
 
 	var openBra = parsec.Atom("{", "OPENBRA")

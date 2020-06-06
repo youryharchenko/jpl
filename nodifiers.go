@@ -114,7 +114,15 @@ func propNode(ns []parsec.ParsecNode) parsec.ParsecNode {
 		return nil
 	}
 	//engine.debug("propNode", ns)
-	key := nodeToExpr(ns[0]).String()
+	var key string
+	switch e := nodeToExpr(ns[0]).(type) {
+	case *ID:
+		key = e.Value
+	case *Text:
+		key = e.Value
+	default:
+		key = e.String()
+	}
 	item := nodeToExpr(ns[2])
 	return &Prop{Node: ns[1], Key: key, Value: item, Name: "Prop", CtxName: "main"}
 }
@@ -148,7 +156,7 @@ func commentNode(ns []parsec.ParsecNode) parsec.ParsecNode {
 */
 
 func nodeToExpr(node parsec.ParsecNode) (res Expr) {
-	switch node.(type) {
+	switch n := node.(type) {
 	case *Int:
 		res = node.(*Int)
 	case *Float:
@@ -169,6 +177,8 @@ func nodeToExpr(node parsec.ParsecNode) (res Expr) {
 		res = node.(*Dict)
 	case *Text:
 		res = node.(*Text)
+	case string:
+		return &Text{Node: node, Value: strings.ReplaceAll(n, `"`, ""), Name: "Text", CtxName: "main"}
 	//case *Comment:
 	//	res = node.(*Comment)
 	case []parsec.ParsecNode:
@@ -181,7 +191,6 @@ func nodeToExpr(node parsec.ParsecNode) (res Expr) {
 		}
 	case *parsec.Terminal:
 		//engine.debug("nodeToExpr: *parsec.Terminal", node)
-		n := node.(*parsec.Terminal)
 		switch n.Name {
 		case "INT":
 			i, _ := strconv.Atoi(n.Value)

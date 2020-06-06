@@ -1,0 +1,31 @@
+
+(set user "admin")
+(set password "admin")
+
+(set doRequest (func [client request] (apply (apply .client do .request) toDict)))
+
+(set client (new HttpClient {}))
+
+(set reqLogin (new HttpRequest {
+    method:"POST"
+    url:"https://ai-r.info:9180/login"
+    body:(toJSON {username:.user password:.password})
+    header: {
+        "Content-Type":"application/json" 
+    }
+}))
+
+(set loginResponse (fromJSON (get (.doRequest .client .reqLogin) body)))
+(print .loginResponse)
+
+(set reqAuthTest (new HttpRequest {
+    method:"GET"
+    url:"https://ai-r.info:9180/auth_test"
+    header: {
+        "Authorization":(concat "Bearer " (get .loginResponse token))
+    }
+}))
+
+(set authTestResponse (fromJSON (get (.doRequest .client .reqAuthTest) body)))
+(print .authTestResponse)
+

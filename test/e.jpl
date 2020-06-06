@@ -26,3 +26,10 @@
 (cons 0 [1 2] )
 (cons 0 [])
 (fold (range 0 10) [] cons)
+
+#(map (range 0 10) (curry + 1))
+
+(is <id> (id "abc"))
+(is <id> (id 1))
+{"a":abc}
+ 
